@@ -9,14 +9,21 @@
     body, html { width: 100%; height: 100%; overflow: hidden; background: #07080c; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     #glitch-root { width: 100vw; height: 100vh; position: relative; overflow: hidden; cursor: default; user-select: none; }
     
-    /* Griglia desktop disordinato */
+    /* Griglia desktop disordinato reale */
     .desktop-bg { position: absolute; inset: 0; background-color: #0c0d14; background-size: 40px 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); grid-template-rows: repeat(auto-fill, minmax(100px, 1fr)); gap: 20px; padding: 30px; z-index: 0; }
-    .bg-icon { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; opacity: 0.2; padding: 6px; border-radius: 6px; }
-    .bg-icon-visual { width: 24px; height: 24px; margin-bottom: 4px; background: #2a2d3a; border-radius: 2px; }
-    .bg-icon-text { font-size: 9px; color: #6c7180; font-family: monospace; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+    
+    /* RIPRISTINO: Grafica e visibilità delle icone spazzatura del desktop */
+    .bg-icon { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; opacity: 0.35; padding: 6px; border-radius: 6px; z-index: 1; }
+    .bg-icon-visual { width: 28px; height: 28px; margin-bottom: 4px; position: relative; }
+    .bg-icon-visual.folder { background: #e0a96d; border-radius: 3px 5px 3px 3px; }
+    .bg-icon-visual.folder::before { content: ''; position: absolute; top: -3px; left: 0; width: 10px; height: 3px; background: #e0a96d; }
+    .bg-icon-visual.pdf { background: #ef5350; border-radius: 2px; }
+    .bg-icon-visual.pdf::before { content: 'PDF'; position: absolute; bottom: 1px; left: 2px; font-size: 7px; font-family: monospace; color: #fff; font-weight: bold; }
+    .bg-icon-text { font-size: 9px; color: #8e93a2; font-family: monospace; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; width: 100%; }
 
     /* HUD Riserva */
     .hud-container { position: absolute; top: 20px; left: 20px; z-index: 150; background: rgba(10, 11, 16, 0.95); padding: 14px 20px; border-radius: 8px; border: 0.5px solid rgba(100, 255, 100, 0.15); min-width: 260px; }
+    #glitch-root.hyperfocus .hud-container { border-color: #28c840; box-shadow: 0 0 15px rgba(40,200,80,0.2); }
     .hud-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
     .hud-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: rgba(100, 255, 100, 0.8); font-family: monospace; }
     .hud-value { font-size: 11px; font-family: monospace; color: #fff; }
@@ -49,7 +56,7 @@
     .win.freeze-purple .win-title { color: #ab47bc; }
     .win.freeze-purple .win-cta { background: rgba(171, 71, 188, 0.08); border: 0.5px solid rgba(171, 71, 188, 0.3); color: #ab47bc; }
 
-    /* Stack Chiamate Coerenti */
+    /* Stack Chiamate */
     .incoming-call-box { width: 340px; background: #141520; border: 1px solid #febc2e; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); z-index: 110; padding: 16px; }
     .call-info { display: flex; align-items: center; gap: 12px; }
     .call-avatar { width: 36px; height: 36px; background: #febc2e; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
@@ -67,7 +74,6 @@
     .overlay.active { display: flex; opacity: 1; pointer-events: all; }
     .resource-card { background: #0e0e14; border-radius: 12px; padding: 32px; max-width: 440px; width: 92%; position: relative; }
     
-    /* Mantenimento colore semantico interno alle card */
     .resource-card.card-red { border: 1px solid #ff5f57; }
     .resource-card.card-blue { border: 1px solid #42a5f5; }
     .resource-card.card-yellow { border: 1px solid #febc2e; }
@@ -89,7 +95,7 @@
     .glitch-bar { position: absolute; left: 0; right: 0; height: 3px; background: rgba(220,80,80,0.35); z-index: 300; pointer-events: none; display: none; }
     .taskbar { position: absolute; bottom: 0; left: 0; right: 0; height: 40px; background: #090a0e; border-top: 0.5px solid rgba(100,200,100,0.12); display: flex; align-items: center; padding: 0 16px; z-index: 100; }
     .taskbar-time { margin-left: auto; font-size: 12px; color: rgba(140,180,140,0.4); font-family: monospace; }
-    .hint { position: absolute; bottom: 60px; left: 0; right: 0; text-align: center; font-size: 11px; font-family: monospace; color: rgba(100,150,100,0.35); z-index: 5; transition: color 0.3s; }
+    .hint { position: absolute; bottom: 60px; left: 0; right: 0; text-align: center; font-size: 11px; font-family: monospace; color: rgba(100,150,100,0.35); z-index: 5; }
   </style>
 </head>
 <body>
@@ -109,7 +115,7 @@
     </div>
   </div>
 
-  <div class="win err-red" id="win-error" style="left: 10vw; top: 15vh; width: 280px;">
+  <div class="win err-red" id="win-error" style="left: 10vw; top: 18vh; width: 280px;">
     <div class="win-title"><div class="win-dot"></div><span>errore_sistema.exe</span></div>
     <div class="win-body">
       <div class="label">EXCEPTION_0x0F — executive_function.dll</div>
@@ -118,7 +124,7 @@
     </div>
   </div>
 
-  <div class="win social-blue" id="win-slack" style="right: 15vw; top: 12vh; width: 270px;">
+  <div class="win social-blue" id="win-slack" style="right: 15vw; top: 15vh; width: 270px;">
     <div class="win-title"><div class="win-dot"></div><span>slack — #general</span></div>
     <div class="win-body">
       <div class="label">3 messaggi non letti</div>
@@ -127,7 +133,7 @@
     </div>
   </div>
 
-  <div class="win time-yellow" id="win-cal" style="left: 15vw; bottom: 20vh; width: 280px;">
+  <div class="win time-yellow" id="win-cal" style="left: 15vw; bottom: 22vh; width: 280px;">
     <div class="win-title"><div class="win-dot"></div><span>calendario — promemoria</span></div>
     <div class="win-body">
       <div class="label">⚠ SCADENZA TRA 10 MINUTI</div>
@@ -136,7 +142,7 @@
     </div>
   </div>
 
-  <div class="win freeze-purple" id="win-mail" style="right: 12vw; bottom: 25vh; width: 260px;">
+  <div class="win freeze-purple" id="win-mail" style="right: 12vw; bottom: 28vh; width: 260px;">
     <div class="win-title"><div class="win-dot"></div><span>gmail — inbox (47)</span></div>
     <div class="win-body">
       <div class="label">non letti: 47 messaggi</div>
@@ -203,21 +209,25 @@ document.addEventListener('DOMContentLoaded', () => {
   let telemetry = { subTasks: 0, falseClicks: 0, hyperStates: 0, startTime: Date.now(), focusHistory: [] };
   let focusScore = 100;
   let audioCtx = null;
-  let clickCount = 0; // Contatore dei click per gestire i cambi di fase
+  let clickCount = 0; 
   let activeRingersCount = 0;
   let hoverTimers = {};
   let driftIntervals = {};
-  let glitchFrequenceMultiplier = 1; // Glitch progressivo
+  let glitchFrequenceMultiplier = 1;
 
   const callers = ["Ufficio", "Sconosciuto", "Mamma", "Banca"];
   const wins = ['win-error', 'win-slack', 'win-cal', 'win-mail'];
 
-  // Generazione icone sul desktop grafico disordinato
-  for (let i = 0; i < 40; i++) {
-    if (Math.random() > 0.5) {
+  // RISOLUZIONE: Popolamento icone visibili (Cartelle e PDF alternati con classi grafiche)
+  for (let i = 0; i < 45; i++) {
+    if (Math.random() > 0.4) {
+      const isFolder = Math.random() > 0.5;
       const icon = document.createElement('div');
       icon.className = 'bg-icon';
-      icon.innerHTML = `<div class="bg-icon-visual"></div><div class="bg-icon-text">file_accumulato_${i}.pdf</div>`;
+      icon.innerHTML = `
+        <div class="bg-icon-visual ${isFolder ? 'folder' : 'pdf'}"></div>
+        <div class="bg-icon-text">${isFolder ? 'Cartella_Progetto' : 'Bozza_Codice'}_${i}</div>
+      `;
       desktopGrid.appendChild(icon);
     } else {
       desktopGrid.appendChild(document.createElement('div'));
@@ -248,14 +258,12 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(e) {}
   }
 
-  // Glitch progressivo fluttuante
   function glitchFlash() {
     gbar.style.display = 'block';
     gbar.style.top = Math.random() * window.innerHeight + 'px';
     setTimeout(() => { gbar.style.display = 'none'; }, 60);
   }
 
-  // Funzione per indurre il drifting indipendente impazzito della Fase 2
   function makeWindowDrift(element, id) {
     if (driftIntervals[id]) return;
     driftIntervals[id] = setInterval(() => {
@@ -264,13 +272,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const maxY = window.innerHeight - element.offsetHeight - 60;
       element.style.left = Math.max(20, Math.random() * maxX) + 'px';
       element.style.top = Math.max(40, Math.random() * maxY) + 'px';
-      
-      // Incremento glitch basato sulla progressione
       if (Math.random() * 5 < glitchFrequenceMultiplier) glitchFlash();
     }, 1900 + Math.random() * 900);
   }
 
-  // Attivazione Modalità Caos globale (Fase 2)
   function startChaosMode() {
     hint.textContent = "le finestre si spostano — è normale sentirsi disorientati";
     hint.style.color = "rgba(220, 80, 80, 0.7)";
@@ -283,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.openOverlay = function(id) {
     initAudio();
     document.getElementById(id).classList.add('active');
-    glitchFrequenceMultiplier += 0.5; // Crescita progressiva delle interferenze
+    glitchFrequenceMultiplier += 0.5;
   };
 
   window.closeOverlay = function(id) {
@@ -294,27 +299,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Associazione navigazione disorientante esplicita
   document.getElementById('win-error').addEventListener('click', () => openOverlay('ov-error'));
   document.getElementById('win-slack').addEventListener('click', () => openOverlay('ov-slack'));
   document.getElementById('win-cal').addEventListener('click', () => openOverlay('ov-cal'));
   document.getElementById('win-mail').addEventListener('click', () => openOverlay('ov-mail'));
 
-  // Gestione Meccanica Fuga da Indugio (1.8 secondi di tolleranza mouseenter nella Fase 1)
+  // CORREZIONE CRASH: Cambiato 'element' orfano con 'el' corretto all'interno del calcolo vettoriale maxY
   wins.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     
     el.addEventListener('mouseenter', () => {
-      if (clickCount >= 1 && clickCount < 2) { // Scatta solo dopo il primo click e prima del caos globale
+      if (clickCount >= 1 && clickCount < 2) { 
         hoverTimers[id] = setTimeout(() => {
           const maxX = window.innerWidth - el.offsetWidth - 30;
-          const maxY = window.innerHeight - element.offsetHeight - 60;
+          const maxY = window.innerHeight - el.offsetHeight - 60; // Risolto errore 'element'
           el.style.left = Math.random() * maxX + 'px';
           el.style.top = Math.random() * maxY + 'px';
           playSynthTone(220, 0.05, 'sawtooth');
           glitchFlash();
-        }, 1800); // 1.8s di indugio esatti
+        }, 1800); 
       }
     });
 
@@ -323,7 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Chiamate asincrone concorrenti a 3s accumulate
   function createAudioRinger() {
     activeRingersCount++;
     let ringInterval = setInterval(() => {
@@ -333,6 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return ringInterval;
   }
 
+  // MODIFICA RICHIESTA: Intervallo alzato a 5 secondi esatti (5000ms)
   setInterval(() => {
     if (focusScore <= 0 || document.querySelectorAll('.incoming-call-box').length > 6) return;
     initAudio();
@@ -369,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     root.appendChild(callElement);
     if (clickCount >= 2) makeWindowDrift(callElement, 'call-' + Date.now());
-  }, 3000);
+  }, 5000); // 5000ms di delay per lo spawn
 
   // Consumo progressivo riserva energetica
   setInterval(() => {
