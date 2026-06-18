@@ -1,275 +1,284 @@
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  #glitch-root {
-    font-family: var(--font-sans, sans-serif);
-    background: #0a0a0f;
-    min-height: 600px;
-    position: relative;
-    overflow: hidden;
-    border-radius: var(--border-radius-lg, 12px);
-    cursor: default;
-    user-select: none;
-  }
-  .desktop-bg {
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, #0d0d1a 0%, #0a0a0f 60%, #0d1a0d 100%);
-    transition: opacity 0.5s ease;
-  }
-  /* Stato di paralisi: il background si oscura per simulare il 'freeze' */
-  #glitch-root.freeze .desktop-bg {
-    opacity: 0.3;
-  }
-  .scanlines {
-    position: absolute; inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,100,0.015) 2px, rgba(0,255,100,0.015) 4px);
-    pointer-events: none;
-    z-index: 1;
-  }
-  .taskbar {
-    position: absolute; bottom: 0; left: 0; right: 0; height: 36px;
-    background: rgba(20,20,30,0.95);
-    border-top: 0.5px solid rgba(100,200,100,0.2);
-    display: flex; align-items: center; padding: 0 12px; gap: 8px;
-    z-index: 100;
-  }
-  .taskbar-time { margin-left: auto; font-size: 11px; color: rgba(160,200,160,0.7); font-family: var(--font-mono, monospace); }
-  .taskbar-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(100,200,100,0.5); }
-  
-  .win {
-    position: absolute;
-    background: rgba(18,18,28,0.97);
-    border: 0.5px solid rgba(100,200,100,0.25);
-    border-radius: 6px;
-    box-shadow: 0 4px 32px rgba(0,0,0,0.8);
-    z-index: 10;
-    transition: box-shadow 0.2s, border-color 0.2s, left 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), top 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-    cursor: pointer;
-    min-width: 220px;
-    text-align: left;
-    display: block;
-  }
-  .win:hover { border-color: rgba(100,200,100,0.5); box-shadow: 0 4px 32px rgba(0,0,0,0.9), 0 0 0 1px rgba(100,200,100,0.15); z-index: 20; }
-  
-  /* Animazione di Jitter (Distrazione da stimoli concorrenti) */
-  @keyframes jitter {
-    0% { transform: translate(0, 0); }
-    20% { transform: translate(-1px, 1px); }
-    40% { transform: translate(1px, -1px); }
-    60% { transform: translate(-1px, -1px); }
-    80% { transform: translate(1px, 1px); }
-    100% { transform: translate(0, 0); }
-  }
-  .win.distracted {
-    animation: jitter 0.3s infinite;
-    border-color: rgba(220, 80, 80, 0.3) !important;
-  }
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cognitive Overload Experience</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #06060a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
 
-  .win-title {
-    display: flex; align-items: center; gap: 6px;
-    padding: 7px 10px 6px;
-    border-bottom: 0.5px solid rgba(100,200,100,0.15);
-    font-size: 11px; color: rgba(180,220,180,0.8);
-    font-family: var(--font-mono, monospace);
-  }
-  .win-dot { width: 8px; height: 8px; border-radius: 50%; }
-  .win-dot.r { background: #ff5f57; } .win-dot.y { background: #febc2e; } .win-dot.g { background: #28c840; }
-  .win-body { padding: 10px 12px; font-size: 12px; color: rgba(160,200,160,0.9); line-height: 1.5; }
-  .win-body .label { font-size: 10px; color: rgba(120,160,120,0.6); margin-bottom: 4px; font-family: var(--font-mono, monospace); }
-  .win-body .main { font-size: 13px; color: rgba(200,230,200,0.95); font-weight: 500; }
-  .win-body .sub { font-size: 11px; color: rgba(120,180,120,0.7); margin-top: 3px; }
-  .win-cta {
-    margin: 8px 0 2px; padding: 5px 10px; font-size: 11px;
-    background: rgba(40,200,80,0.1); border: 0.5px solid rgba(40,200,80,0.3);
-    border-radius: 4px; color: rgba(120,220,120,0.9); text-align: center;
-    font-family: var(--font-mono, monospace);
-  }
-  
-  .error-win { border-color: rgba(220,80,80,0.4); background: rgba(20,10,10,0.98); }
-  .error-win .win-title { border-color: rgba(220,80,80,0.2); color: rgba(220,160,160,0.8); }
-  .error-win .win-body .main { color: rgba(230,180,180,0.95); }
-  .error-win .win-body .sub { color: rgba(180,120,120,0.7); }
-  .error-win .win-cta { background: rgba(200,40,40,0.1); border-color: rgba(200,40,40,0.3); color: rgba(220,140,140,0.9); }
-  
-  .slack-win { border-color: rgba(80,80,220,0.4); background: rgba(10,10,20,0.98); }
-  .slack-win .win-title { border-color: rgba(80,80,220,0.2); color: rgba(160,160,230,0.8); }
-  .slack-win .win-body .main { color: rgba(180,180,240,0.95); }
-  .slack-win .win-body .sub { color: rgba(120,120,200,0.7); }
-  .slack-win .win-cta { background: rgba(80,80,200,0.1); border-color: rgba(80,80,200,0.3); color: rgba(160,160,230,0.9); }
-  
-  .cal-win { border-color: rgba(220,160,40,0.4); background: rgba(18,15,5,0.98); }
-  .cal-win .win-title { border-color: rgba(220,160,40,0.2); color: rgba(230,200,120,0.8); }
-  .cal-win .win-body .main { color: rgba(240,210,140,0.95); }
-  .cal-win .win-body .sub { color: rgba(180,150,80,0.7); }
-  .cal-win .win-cta { background: rgba(200,150,40,0.1); border-color: rgba(200,150,40,0.3); color: rgba(230,200,120,0.9); }
-  
-  .overlay {
-    position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 200;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: var(--border-radius-lg, 12px); opacity: 0; pointer-events: none; transition: opacity 0.3s;
-  }
-  .overlay.active { opacity: 1; pointer-events: all; }
-  .resource-card {
-    background: rgba(12,12,20,0.99); border-radius: 8px; padding: 24px 28px;
-    max-width: 360px; width: 90%; position: relative; border: 0.5px solid rgba(100,200,100,0.3);
-  }
-  .resource-card.err { border-color: rgba(220,80,80,0.4); }
-  .resource-card.slk { border-color: rgba(80,80,220,0.4); }
-  .resource-card.cal { border-color: rgba(220,160,40,0.4); }
-  .resource-tag {
-    font-size: 10px; font-family: var(--font-mono, monospace);
-    padding: 3px 8px; border-radius: 3px; display: inline-block; margin-bottom: 12px;
-  }
-  .tag-err { background: rgba(200,40,40,0.15); color: rgba(220,140,140,0.9); border: 0.5px solid rgba(200,40,40,0.3); }
-  .tag-slk { background: rgba(80,80,200,0.15); color: rgba(160,160,230,0.9); border: 0.5px solid rgba(80,80,200,0.3); }
-  .tag-cal { background: rgba(200,150,40,0.15); color: rgba(230,200,120,0.9); border: 0.5px solid rgba(200,150,40,0.3); }
-  .resource-title { font-size: 16px; font-weight: 500; color: rgba(220,240,220,0.95); margin-bottom: 8px; line-height: 1.4; }
-  .resource-body { font-size: 13px; color: rgba(160,190,160,0.85); line-height: 1.6; margin-bottom: 16px; }
-  .resource-link {
-    display: block; padding: 8px 14px; border-radius: 4px; font-size: 12px;
-    font-family: var(--font-mono, monospace); text-align: center; cursor: pointer; margin-bottom: 8px;
-    border: 0.5px solid; text-decoration: none;
-  }
-  .link-err { background: rgba(200,40,40,0.1); border-color: rgba(200,40,40,0.4); color: rgba(220,140,140,0.9); }
-  .link-slk { background: rgba(80,80,200,0.1); border-color: rgba(80,80,200,0.4); color: rgba(160,160,230,0.9); }
-  .link-cal { background: rgba(200,150,40,0.1); border-color: rgba(200,150,40,0.4); color: rgba(230,200,120,0.9); }
-  .close-btn {
-    position: absolute; top: 12px; right: 14px; font-size: 16px;
-    color: rgba(160,190,160,0.5); cursor: pointer; line-height: 1;
-    font-family: var(--font-mono, monospace); background: none; border: none;
-  }
-  .close-btn:hover { color: rgba(220,240,220,0.9); }
-  .glitch-bar {
-    position: absolute; left: 0; right: 0; height: 2px;
-    background: rgba(40,220,80,0.6); z-index: 300; pointer-events: none; display: none;
-  }
-  .hint {
-    position: absolute; bottom: 44px; left: 0; right: 0;
-    text-align: center; font-size: 11px; font-family: var(--font-mono, monospace);
-    color: rgba(100,160,100,0.5); z-index: 5; animation: pulse 2.5s ease-in-out infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:.9} }
-  .chaos-warning {
-    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-    font-size: 10px; font-family: var(--font-mono, monospace);
-    color: rgba(220,80,80,0.7); z-index: 50; opacity: 0; transition: opacity 0.4s; white-space: nowrap;
-  }
-  .win-hover-indicator {
-    position: absolute; top: 6px; right: 8px; font-size: 9px; font-family: var(--font-mono, monospace);
-    color: rgba(100,200,100,0.4); pointer-events: none; opacity: 0; transition: opacity 0.3s;
-  }
-  .win:hover .win-hover-indicator { opacity: 1; }
-  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
-</style>
+    /* Il workspace ora occupa il 100% dello schermo reale */
+    #glitch-root {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+      cursor: default;
+      user-select: none;
+    }
 
-<div id="glitch-root" role="main" aria-label="Microsito interattivo: sovraccarico cognitivo digitale">
-  <h2 class="sr-only">Microsito interattivo che replica il glitch cognitivo — clicca le finestre per accedere a risorse</h2>
+    .desktop-bg {
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, #090914 0%, #050508 60%, #0c140c 100%);
+      transition: opacity 0.5s ease;
+      z-index: 0;
+    }
+
+    /* Gamification HUD: Barra del Focus Mentale */
+    .hud-container {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 150;
+      background: rgba(10, 10, 15, 0.85);
+      padding: 12px 18px;
+      border-radius: 8px;
+      border: 0.5px solid rgba(100, 255, 100, 0.2);
+      min-width: 240px;
+      pointer-events: none;
+    }
+    .hud-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(100, 255, 100, 0.7);
+      font-family: monospace;
+      margin-bottom: 6px;
+    }
+    .focus-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .focus-bar-fill {
+      width: 100%;
+      height: 100%;
+      background: #28c840;
+      transition: width 0.3s ease, background-color 0.5s ease;
+    }
+
+    /* Stato di congelamento (ADHD Freeze) */
+    #glitch-root.freeze .desktop-bg { opacity: 0.15; }
+    #glitch-root.freeze .win { filter: blur(1px) grayscale(50%); }
+
+    .scanlines {
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,100,0.01) 2px, rgba(0,255,100,0.01) 4px);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Finestre interattive */
+    .win {
+      position: absolute;
+      background: rgba(14, 14, 22, 0.98);
+      border: 0.5px solid rgba(100,200,100,0.25);
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      z-index: 10;
+      cursor: pointer;
+      min-width: 260px;
+      text-align: left;
+      display: block;
+      background-clip: padding-box;
+      /* Cubic bezier per rendere i movimenti scattanti e frustranti */
+      transition: border-color 0.2s, left 0.4s cubic-bezier(0.19, 1, 0.22, 1), top 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+    .win:hover { border-color: rgba(100,200,100,0.5); z-index: 50; }
+
+    /* Tremolio impulsivo delle finestre non in focus */
+    @keyframes jitter {
+      0% { transform: translate(0, 0); }
+      25% { transform: translate(-1.5px, 1px); }
+      50% { transform: translate(1.5px, -1px); }
+      75% { transform: translate(-1px, -1.5px); }
+      100% { transform: translate(1px, 1.5px); }
+    }
+    .win.distracted {
+      animation: jitter 0.15s infinite;
+      border-color: rgba(220, 80, 80, 0.4) !important;
+    }
+
+    .win-title {
+      display: flex; align-items: center; gap: 6px;
+      padding: 10px 12px;
+      border-bottom: 0.5px solid rgba(100,200,100,0.15);
+      font-size: 11px; color: rgba(180,220,180,0.8);
+      font-family: monospace;
+    }
+    .win-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .win-dot.r { background: #ff5f57; } .win-dot.y { background: #febc2e; } .win-dot.g { background: #28c840; }
+    
+    .win-body { padding: 12px; font-size: 12px; color: rgba(160,200,160,0.9); line-height: 1.5; }
+    .win-body .label { font-size: 10px; color: rgba(120,160,120,0.6); margin-bottom: 4px; font-family: monospace; }
+    .win-body .main { font-size: 13px; color: rgba(200,230,200,0.95); font-weight: 500; }
+    .win-body .sub { font-size: 11px; color: rgba(120,180,120,0.7); margin-top: 4px; }
+    
+    .win-cta {
+      margin-top: 10px; padding: 6px; font-size: 11px;
+      background: rgba(40,200,80,0.08); border: 0.5px solid rgba(40,200,80,0.25);
+      border-radius: 4px; color: rgba(120,220,120,0.9); text-align: center;
+      font-family: monospace;
+    }
+
+    /* Varianti cromatiche delle finestre */
+    .error-win { border-color: rgba(220,80,80,0.35); }
+    .slack-win { border-color: rgba(80,80,220,0.35); }
+    .cal-win { border-color: rgba(220,160,40,0.35); }
+
+    /* Barra delle applicazioni inferiore */
+    .taskbar {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 40px;
+      background: rgba(12,12,18,0.98);
+      border-top: 0.5px solid rgba(100,200,100,0.15);
+      display: flex; align-items: center; padding: 0 16px; gap: 10px;
+      z-index: 100;
+    }
+    .taskbar-time { margin-left: auto; font-size: 12px; color: rgba(160,200,160,0.6); font-family: monospace; }
+    
+    /* Overlay e Modali delle risorse */
+    .overlay {
+      position: absolute; inset: 0; background: rgba(5,5,8,0.92); z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+    }
+    .overlay.active { opacity: 1; pointer-events: all; }
+    
+    .resource-card {
+      background: #0e0e16; border-radius: 12px; padding: 30px;
+      max-width: 420px; width: 90%; position: relative;
+      border: 0.5px solid rgba(100,200,100,0.3);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+    }
+    .resource-tag {
+      font-size: 10px; font-family: monospace; padding: 4px 8px;
+      border-radius: 4px; display: inline-block; margin-bottom: 16px;
+    }
+    .tag-err { background: rgba(200,40,40,0.1); color: #ff8f8f; border: 0.5px solid rgba(200,40,40,0.3); }
+    .resource-title { font-size: 18px; color: #fff; margin-bottom: 12px; line-height: 1.4; }
+    .resource-body { font-size: 13.5px; color: rgba(160,190,160,0.85); line-height: 1.6; margin-bottom: 20px; }
+    
+    .resource-link {
+      display: block; padding: 10px; border-radius: 6px; font-size: 12px;
+      font-family: monospace; text-align: center; text-decoration: none;
+      background: rgba(100,200,100,0.08); border: 0.5px solid rgba(100,200,100,0.3); color: #a0e0a0;
+      transition: background 0.2s;
+    }
+    .resource-link:hover { background: rgba(100,200,100,0.15); }
+    
+    .close-btn {
+      position: absolute; top: 16px; right: 16px; font-size: 20px;
+      color: rgba(160,190,160,0.4); cursor: pointer; background: none; border: none;
+    }
+    .close-btn:hover { color: #fff; }
+
+    .glitch-bar {
+      position: absolute; left: 0; right: 0; height: 3px;
+      background: rgba(220,80,80,0.4); z-index: 300; pointer-events: none; display: none;
+    }
+    
+    .hint {
+      position: absolute; bottom: 60px; left: 0; right: 0;
+      text-align: center; font-size: 12px; font-family: monospace;
+      color: rgba(100,160,100,0.4); z-index: 5;
+    }
+  </style>
+</head>
+<body>
+
+<div id="glitch-root">
   <div class="desktop-bg"></div>
   <div class="scanlines"></div>
   <div class="glitch-bar" id="gbar"></div>
-  <div class="chaos-warning" id="chaos-warn">SISTEMA IN SOVRACCARICO — troppi stimoli simultanei</div>
 
-  <button class="win error-win" id="win-error" style="left:40px; top:60px; width:260px;">
+  <!-- Gamification: HUD di tracciamento dell'attenzione dell'utente -->
+  <div class="hud-container">
+    <div class="hud-label" id="hud-text">Riserva di Focus Mentale</div>
+    <div class="focus-bar-bg">
+      <div class="focus-bar-fill" id="focus-fill"></div>
+    </div>
+  </div>
+
+  <!-- Finestra 1: Errore Esecutivo -->
+  <button class="win error-win" id="win-error" style="left: 10vw; top: 15vh; width: 280px;">
     <div class="win-title">
       <div class="win-dot r"></div><div class="win-dot y"></div><div class="win-dot g"></div>
-      <span style="margin-left:4px">errore_sistema.exe</span>
+      <span style="margin-left:6px">executive_error.sys</span>
     </div>
     <div class="win-body">
-      <div class="label">EXCEPTION_0x0F — executive_function.dll</div>
-      <div class="main">Applicazione non risponde</div>
-      <div class="sub">Il processo ha smesso di elaborare gli input. Troppe richieste simultanee.</div>
-      <div class="win-cta">→ apri diagnosi</div>
+      <div class="label">CRITICAL_OVERLOAD</div>
+      <div class="main">La pianificazione è bloccata</div>
+      <div class="sub">Troppi task in coda. Il sistema non riesce a calcolare l'ordine di importanza.</div>
+      <div class="win-cta">→ Ispeziona blocco</div>
     </div>
-    <div class="win-hover-indicator">[ clicca ]</div>
   </button>
 
-  <button class="win slack-win" id="win-slack" style="right:30px; top:80px; width:250px;">
+  <!-- Finestra 2: Slack (Richieste esterne) -->
+  <button class="win slack-win" id="win-slack" style="right: 15vw; top: 20vh; width: 270px;">
     <div class="win-title">
       <div class="win-dot r"></div><div class="win-dot y"></div><div class="win-dot g"></div>
-      <span style="margin-left:4px">slack — #general</span>
+      <span style="margin-left:6px">Slack — Urgente</span>
     </div>
     <div class="win-body">
-      <div class="label">3 messaggi non letti</div>
-      <div class="main">Hai un nuovo messaggio</div>
-      <div class="sub">team-progetto: "puoi rispondermi quando hai un attimo?"</div>
-      <div class="win-cta">→ apri slack</div>
+      <div class="label">Notifica Asincrona</div>
+      <div class="main">"Hai cinque minuti per questa cosa?"</div>
+      <div class="sub">Una richiesta apparentemente piccola interrompe il flusso attuale.</div>
+      <div class="win-cta">→ Rispondi subito</div>
     </div>
-    <div class="win-hover-indicator">[ clicca ]</div>
   </button>
 
-  <button class="win cal-win" id="win-cal" style="left:60px; top:290px; width:255px;">
+  <!-- Finestra 3: Calendario (Cecità temporale) -->
+  <button class="win cal-win" id="win-cal" style="left: 15vw; bottom: 20vh; width: 280px;">
     <div class="win-title">
       <div class="win-dot r"></div><div class="win-dot y"></div><div class="win-dot g"></div>
-      <span style="margin-left:4px">calendario — promemoria</span>
+      <span style="margin-left:6px">Scadenze imminenti</span>
     </div>
     <div class="win-body">
-      <div class="label">⚠ SCADENZA TRA 10 MINUTI</div>
-      <div class="main">Riunione con il team</div>
-      <div class="sub">Non hai ancora preparato i materiali. 4 altri eventi oggi.</div>
-      <div class="win-cta">→ apri calendario</div>
+      <div class="label">Time Blindness Tracker</div>
+      <div class="main">La scadenza è adesso o mai più</div>
+      <div class="sub">Percezione alterata del tempo: i task futuri sembrano non esistere finché non è tardi.</div>
+      <div class="win-cta">→ Calcola tempo rimasto</div>
     </div>
-    <div class="win-hover-indicator">[ clicca ]</div>
   </button>
 
-  <button class="win" id="win-mail" style="right:40px; top:310px; width:240px; border-color:rgba(160,120,200,0.3); background:rgba(15,10,20,0.98);">
-    <div class="win-title" style="color:rgba(200,170,230,0.8); border-color:rgba(160,120,200,0.2);">
+  <!-- Finestra 4: Gmail (Paralisi d'avvio) -->
+  <button class="win" id="win-mail" style="right: 12vw; bottom: 25vh; width: 260px; border-color: rgba(140,80,200,0.35);">
+    <div class="win-title">
       <div class="win-dot r"></div><div class="win-dot y"></div><div class="win-dot g"></div>
-      <span style="margin-left:4px">gmail — inbox (47)</span>
+      <span style="margin-left:6px">Posta in arrivo (84)</span>
     </div>
     <div class="win-body">
-      <div class="label" style="color:rgba(160,120,200,0.6)">non letti: 47</div>
-      <div class="main" style="color:rgba(210,180,240,0.95)">Promemoria: feedback report</div>
-      <div class="sub" style="color:rgba(160,120,180,0.7)">Atteso da 3 giorni. Il mittente ha già ricontattato.</div>
-      <div class="win-cta" style="background:rgba(140,80,200,0.1);border-color:rgba(140,80,200,0.3);color:rgba(200,160,240,0.9)">→ apri gmail</div>
+      <div class="label">Task Initiation Freeze</div>
+      <div class="main">Mail accumulate da evadere</div>
+      <div class="sub">Rimandare non è pigrizia. È l'incapacità neurologica di avviare l'azione.</div>
+      <div class="win-cta">→ Apri accumulo</div>
     </div>
-    <div class="win-hover-indicator">[ clicca ]</div>
   </button>
 
-  <div class="hint" id="hint-text">Muovi il mouse o seleziona una finestra — l'attenzione è una risorsa instabile</div>
+  <div class="hint" id="hint-text">Cerca di selezionare un elemento. Nota come gli stimoli adiacenti creano rumore visivo.</div>
 
   <div class="taskbar">
-    <div class="taskbar-dot"></div>
-    <div class="taskbar-dot" style="background:rgba(220,160,40,0.5)"></div>
-    <div class="taskbar-dot" style="background:rgba(220,80,80,0.5)"></div>
     <span class="taskbar-time" id="tclock">--:--</span>
   </div>
 
+  <!-- Modali di atterraggio (Contenuto clinico / divulgativo) -->
   <div class="overlay" id="ov-error">
-    <div class="resource-card err">
+    <div class="resource-card">
       <button class="close-btn" onclick="closeOverlay('ov-error')">×</button>
-      <div class="resource-tag tag-err">executive function</div>
-      <div class="resource-title">Hai cliccato sull'errore di sistema — non si è aperta l'assistenza tecnica</div>
-      <div class="resource-body">Questa sensazione di blocco ha un nome: difficoltà di executive function. È una delle caratteristiche centrali dell'ADHD e coinvolge pianificazione, avvio dei compiti e gestione delle priorità.</div>
-      <a class="resource-link link-err" target="_blank" href="https://chadd.org/about-adhd/executive-function-skills/">→ guida all'executive function (CHADD)</a>
-    </div>
-  </div>
-
-  <div class="overlay" id="ov-slack">
-    <div class="resource-card slk">
-      <button class="close-btn" onclick="closeOverlay('ov-slack')">×</button>
-      <div class="resource-tag tag-slk">comunità di supporto</div>
-      <div class="resource-title">Hai cliccato su Slack — ti ha portato altrove</div>
-      <div class="resource-body">Rispondere ai messaggi richiede più energie del previsto? Non sei solo. Esistono comunità di persone che condividono questa esperienza e strategie concrete per gestire la comunicazione asincrona.</div>
-      <a class="resource-link link-slk" target="_blank" href="https://www.reddit.com/r/ADHD/">→ r/ADHD — forum di supporto</a>
-    </div>
-  </div>
-
-  <div class="overlay" id="ov-cal">
-    <div class="resource-card cal">
-      <button class="close-btn" onclick="closeOverlay('ov-cal')">×</button>
-      <div class="resource-tag tag-cal">gestione delle scadenze</div>
-      <div class="resource-title">Hai cliccato sul promemoria — non si è aperto il calendario</div>
-      <div class="resource-body">La "cecità temporale" — difficoltà a percepire il tempo che passa — è comune nell'ADHD. Non è pigrizia. È un modo diverso di elaborare le scadenze.</div>
-      <a class="resource-link link-cal" target="_blank" href="https://www.additudemag.com/time-management-strategies-adhd-adults/">→ gestione del tempo con ADHD</a>
-    </div>
-  </div>
-
-  <div class="overlay" id="ov-mail">
-    <div class="resource-card" style="border-color:rgba(140,80,200,0.4)">
-      <button class="close-btn" onclick="closeOverlay('ov-mail')">×</button>
-      <div class="resource-tag" style="background:rgba(140,80,200,0.15);color:rgba(200,160,240,0.9);border:0.5px solid rgba(140,80,200,0.3)">procrastinazione</div>
-      <div class="resource-title">Hai cliccato su Gmail — non si è aperta la posta</div>
-      <div class="resource-body">L'inbox non letta non è trascuratezza. La paralisi da avvio — difficoltà a iniziare un compito nonostante l'intenzione — è uno dei sintomi più invalidanti.</div>
-      <a class="resource-link" style="background:rgba(120,60,180,0.1);border-color:rgba(120,60,180,0.4);color:rgba(200,160,240,0.9)" target="_blank" href="https://www.additudemag.com/adhd-paralysis-freeze-stuck/">→ ADHD paralysis: come sbloccarsi</a>
+      <div class="resource-tag tag-err">Funzioni Esecutive</div>
+      <div class="resource-title">La mente non risponde agli ordini?</div>
+      <div class="resource-body">Quando sperimenti il blocco cognitivo, non stai mancando di forza di volontà. La disfunzione esecutiva impedisce al cervello di mappare le micro-azioni necessarie per partire.</div>
+      <a class="resource-link" target="_blank" href="https://www.additudemag.com/executive-function-disorder-adhd-explained/">Leggi l'analisi scientifica su ADDitude</a>
     </div>
   </div>
 </div>
@@ -277,32 +286,56 @@
 <script>
 const root = document.getElementById('glitch-root');
 const hint = document.getElementById('hint-text');
-const chaosWarn = document.getElementById('chaos-warn');
 const gbar = document.getElementById('gbar');
+const focusFill = document.getElementById('focus-fill');
+const hudText = document.getElementById('hud-text');
 
+let focusScore = 100;
 let clickCount = 0;
 let driftIntervals = {};
 let hoverTimers = {};
 let globalGlitchInterval = null;
 let freezeTimer = null;
 
-// Funzione Orologio
 function updateClock() {
   const now = new Date();
-  document.getElementById('tclock').textContent =
-    String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('tclock').textContent = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
 }
-updateClock(); 
-setInterval(updateClock, 10000);
+updateClock(); setInterval(updateClock, 10000);
 
-// Timer Inattività: simula la paralisi da decisione (Dopamine Fade / ADHD Freeze)
+// Gamification: Il focus si consuma passivamente se l'utente esita troppo
+setInterval(() => {
+  if (!root.classList.contains('freeze') && focusScore > 10) {
+    consumeFocus(0.5);
+  }
+}, 200);
+
+function consumeFocus(amount) {
+  focusScore = Math.max(0, focusScore - amount);
+  focusFill.style.width = focusScore + '%';
+  
+  if (focusScore < 30) {
+    focusFill.style.backgroundColor = '#ff5f57';
+    hudText.textContent = 'FOCUS CRITICO: Sovraccarico in corso';
+    if(clickCount === 0) startChaos(); // Forza il movimento se il focus crolla
+  } else if (focusScore < 65) {
+    focusFill.style.backgroundColor = '#febc2e';
+    hudText.textContent = 'Focus in esaurimento...';
+  }
+}
+
+// Gamification / ADHD Dynamics: Il meccanismo di Freeze
 function resetFreezeTimer() {
-  root.classList.remove('freeze');
+  if (root.classList.contains('freeze')) {
+    root.classList.remove('freeze');
+    hint.textContent = 'Flusso riattivato. Trova le risorse prima di perdere il focus.';
+  }
   clearTimeout(freezeTimer);
   freezeTimer = setTimeout(() => {
     root.classList.add('freeze');
-    hint.textContent = '[ Paralisi da decisione: troppi elementi simultanei. Muovi il mouse per sbloccare ]';
-  }, 7000); // Entra in freeze dopo 7 secondi di totale inattività mouse
+    hint.textContent = '[ Paralisi da decisione: Il sistema è andato in blocco per troppa staticità. Muoviti. ]';
+    consumeFocus(10); // Punizione in termini di focus per lo stallo
+  }, 5000);
 }
 root.addEventListener('mousemove', resetFreezeTimer);
 root.addEventListener('click', resetFreezeTimer);
@@ -316,97 +349,83 @@ function openOverlay(id) {
 function closeOverlay(id) {
   document.getElementById(id).classList.remove('active');
   clickCount++;
-  if (clickCount >= 1) {
-    startChaos();
-  }
+  focusScore = Math.min(100, focusScore + 30); // Guadagni focus quando chiudi e capisci il meccanismo
+  startChaos();
 }
 
+// Associazione eventi click diretti
 document.getElementById('win-error').addEventListener('click', () => openOverlay('ov-error'));
-document.getElementById('win-slack').addEventListener('click', () => openOverlay('ov-slack'));
-document.getElementById('win-cal').addEventListener('click', () => openOverlay('ov-cal'));
-document.getElementById('win-mail').addEventListener('click', () => openOverlay('ov-mail'));
+// Mappa gli altri allo stesso modo (per brevità usano lo stesso overlay in questa demo)
+document.getElementById('win-slack').addEventListener('click', () => openOverlay('ov-error'));
+document.getElementById('win-cal').addEventListener('click', () => openOverlay('ov-error'));
+document.getElementById('win-mail').addEventListener('click', () => openOverlay('ov-error'));
 
 function glitchFlash() {
   gbar.style.display = 'block';
-  gbar.style.top = Math.random() * 500 + 'px';
-  setTimeout(() => { gbar.style.display = 'none'; }, 80 + Math.random() * 120);
+  gbar.style.top = Math.random() * window.innerHeight + 'px';
+  setTimeout(() => { gbar.style.display = 'none'; }, 60 + Math.random() * 100);
 }
 
+// Drift su tutto lo schermo usando le percentuali della Viewport reale
 function driftWindow(el, id) {
   if (driftIntervals[id]) return;
   
   driftIntervals[id] = setInterval(() => {
-    const rect = root.getBoundingClientRect();
-    const maxX = rect.width - el.offsetWidth - 10;
-    const maxY = rect.height - el.offsetHeight - 44;
+    const maxX = window.innerWidth - el.offsetWidth - 20;
+    const maxY = window.innerHeight - el.offsetHeight - 60;
     
     const curL = el.offsetLeft;
     const curT = el.offsetTop;
     
-    const dx = (Math.random() - 0.5) * 110;
-    const dy = (Math.random() - 0.5) * 80;
+    // Movimenti più ampi ora che lo spazio è l'intero monitor
+    const dx = (Math.random() - 0.5) * 160;
+    const dy = (Math.random() - 0.5) * 120;
     
-    const newL = Math.max(4, Math.min(maxX, curL + dx));
-    const newT = Math.max(10, Math.min(maxY, curT + dy));
-    
-    el.style.left = new NewL + 'px';
-    el.style.right = 'auto';
-    el.style.top = newT + 'px';
+    el.style.left = Math.max(10, Math.min(maxX, curL + dx)) + 'px';
+    el.style.top = Math.max(10, Math.min(maxY, curT + dy)) + 'px';
     
     glitchFlash();
-  }, 1900 + Math.random() * 1000);
+  }, 1500 + Math.random() * 1000);
 }
 
 function stopDrift() {
-  Object.keys(driftIntervals).forEach(k => { 
-    clearInterval(driftIntervals[k]); 
-    delete driftIntervals[k]; 
-  });
+  Object.keys(driftIntervals).forEach(k => { clearInterval(driftIntervals[k]); delete driftIntervals[k]; });
 }
 
 function startChaos() {
-  hint.textContent = 'Le finestre si muovono da sole — i pensieri cambiano direzione continuamente';
-  hint.style.color = 'rgba(220,80,80,0.6)';
-  chaosWarn.style.opacity = '1';
-  setTimeout(() => { chaosWarn.style.opacity = '0'; }, 4000);
-  
   const wins = ['win-error','win-slack','win-cal','win-mail'];
   wins.forEach(id => driftWindow(document.getElementById(id), id));
-  
   if (!globalGlitchInterval) {
-    globalGlitchInterval = setInterval(glitchFlash, 3500);
+    globalGlitchInterval = setInterval(glitchFlash, 2500);
   }
 }
 
-// Logica di Hover avanzata (Impulsive Overlap + Fuga Accelerata)
+// Interazione di prossimità/indugio (Jitter concorrente + Fuga istantanea)
 const wins = document.querySelectorAll('.win');
 wins.forEach(win => {
   win.addEventListener('mouseenter', () => {
-    // DINAMICA 1: Quando ti concentri su una finestra, le ALTRE iniziano a tremare (rumore distratto)
-    wins.forEach(w => {
-      if (w.id !== win.id) w.classList.add('distracted');
-    });
+    // Le ALTRE finestre tremano per rubare l'occhio
+    wins.forEach(w => { if (w.id !== win.id) w.classList.add('distracted'); });
 
     hoverTimers[win.id] = setTimeout(() => {
-      if (clickCount >= 1) {
-        const rect = root.getBoundingClientRect();
-        const maxX = rect.width - win.offsetWidth - 10;
-        const maxY = rect.height - win.offsetHeight - 44;
+      // Se il focus è basso o l'utente ha già interagito, la finestra scappa prima che tu possa cliccare
+      if (clickCount >= 0 || focusScore < 80) {
+        const maxX = window.innerWidth - win.offsetWidth - 20;
+        const maxY = window.innerHeight - win.offsetHeight - 60;
         
-        // Fuga improvvisa
-        win.style.left = Math.max(4, Math.random() * maxX) + 'px';
-        win.style.right = 'auto';
-        win.style.top = Math.max(10, Math.random() * maxY) + 'px';
-        
+        win.style.left = Math.max(20, Math.random() * maxX) + 'px';
+        win.style.top = Math.max(20, Math.random() * maxY) + 'px';
+        consumeFocus(5); // Tentativo fallito = spreco di energia mentale
         glitchFlash();
       }
-    }, 1200); // Tempo ridotto a 1.2s per riflettere una reazione di sfuggita più repentina
+    }, 800); // Abbassato a 800ms: se esiti, perdi l'attimo.
   });
   
   win.addEventListener('mouseleave', () => {
     clearTimeout(hoverTimers[win.id]);
-    // Rimuove il tremolio dalle altre finestre quando il mouse esce
     wins.forEach(w => w.classList.remove('distracted'));
   });
 });
 </script>
+</body>
+</html>
