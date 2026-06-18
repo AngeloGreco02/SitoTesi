@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cognitive Overload Experience</title>
+  <title>Cognitive Overload Engine - Fullscreen</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
@@ -11,11 +11,10 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #06060a;
+      background: #050508;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    /* Il workspace ora occupa il 100% dello schermo reale */
     #glitch-root {
       width: 100vw;
       height: 100vh;
@@ -27,36 +26,47 @@
 
     .desktop-bg {
       position: absolute; inset: 0;
-      background: linear-gradient(135deg, #090914 0%, #050508 60%, #0c140c 100%);
+      background: linear-gradient(135deg, #070710 0%, #040406 60%, #0a100a 100%);
       transition: opacity 0.5s ease;
       z-index: 0;
     }
 
-    /* Gamification HUD: Barra del Focus Mentale */
+    /* HUD della risorsa dopaminergica / Focus */
     .hud-container {
       position: absolute;
       top: 20px;
       left: 20px;
       z-index: 150;
-      background: rgba(10, 10, 15, 0.85);
-      padding: 12px 18px;
+      background: rgba(8, 8, 12, 0.9);
+      padding: 14px 20px;
       border-radius: 8px;
-      border: 0.5px solid rgba(100, 255, 100, 0.2);
-      min-width: 240px;
+      border: 0.5px solid rgba(100, 255, 100, 0.15);
+      min-width: 260px;
       pointer-events: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .hud-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
     }
     .hud-label {
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: rgba(100, 255, 100, 0.7);
+      color: rgba(100, 255, 100, 0.8);
       font-family: monospace;
-      margin-bottom: 6px;
+    }
+    .hud-value {
+      font-size: 11px;
+      font-family: monospace;
+      color: #fff;
     }
     .focus-bar-bg {
       width: 100%;
       height: 6px;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.08);
       border-radius: 3px;
       overflow: hidden;
     }
@@ -64,133 +74,169 @@
       width: 100%;
       height: 100%;
       background: #28c840;
-      transition: width 0.3s ease, background-color 0.5s ease;
+      transition: width 0.2s linear, background-color 0.4s ease;
     }
 
-    /* Stato di congelamento (ADHD Freeze) */
-    #glitch-root.freeze .desktop-bg { opacity: 0.15; }
-    #glitch-root.freeze .win { filter: blur(1px) grayscale(50%); }
+    /* Stato di blocco cognitivo (Freeze) */
+    #glitch-root.freeze .desktop-bg { opacity: 0.1; }
+    #glitch-root.freeze .win { filter: blur(1.5px) grayscale(70%); pointer-events: none; }
+    #glitch-root.freeze .toast-notification { filter: blur(1.5px) grayscale(70%); }
 
     .scanlines {
       position: absolute; inset: 0;
-      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,100,0.01) 2px, rgba(0,255,100,0.01) 4px);
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,100,0.008) 2px, rgba(0,255,100,0.008) 4px);
       pointer-events: none;
       z-index: 1;
     }
 
-    /* Finestre interattive */
+    /* Finestre principali */
     .win {
       position: absolute;
-      background: rgba(14, 14, 22, 0.98);
-      border: 0.5px solid rgba(100,200,100,0.25);
+      background: rgba(12, 12, 18, 0.98);
+      border: 0.5px solid rgba(100,200,100,0.2);
       border-radius: 8px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      box-shadow: 0 15px 45px rgba(0,0,0,0.7);
       z-index: 10;
       cursor: pointer;
-      min-width: 260px;
+      min-width: 270px;
       text-align: left;
       display: block;
       background-clip: padding-box;
-      /* Cubic bezier per rendere i movimenti scattanti e frustranti */
-      transition: border-color 0.2s, left 0.4s cubic-bezier(0.19, 1, 0.22, 1), top 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+      transition: border-color 0.2s, left 0.35s cubic-bezier(0.16, 1, 0.3, 1), top 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .win:hover { border-color: rgba(100,200,100,0.5); z-index: 50; }
+    .win:hover { border-color: rgba(100,200,100,0.45); z-index: 40; }
 
-    /* Tremolio impulsivo delle finestre non in focus */
-    @keyframes jitter {
+    /* Animazione di jitter per finestre concorrenti */
+    @keyframes fastJitter {
       0% { transform: translate(0, 0); }
-      25% { transform: translate(-1.5px, 1px); }
-      50% { transform: translate(1.5px, -1px); }
-      75% { transform: translate(-1px, -1.5px); }
-      100% { transform: translate(1px, 1.5px); }
+      25% { transform: translate(-2px, 1.5px); }
+      50% { transform: translate(1.5px, -1.5px); }
+      75% { transform: translate(-1.5px, -1px); }
+      100% { transform: translate(2px, 2px); }
     }
     .win.distracted {
-      animation: jitter 0.15s infinite;
-      border-color: rgba(220, 80, 80, 0.4) !important;
+      animation: fastJitter 0.12s infinite;
+      border-color: rgba(220, 80, 80, 0.35) !important;
     }
 
     .win-title {
       display: flex; align-items: center; gap: 6px;
       padding: 10px 12px;
-      border-bottom: 0.5px solid rgba(100,200,100,0.15);
-      font-size: 11px; color: rgba(180,220,180,0.8);
+      border-bottom: 0.5px solid rgba(100,200,100,0.12);
+      font-size: 11px; color: rgba(160,200,160,0.7);
       font-family: monospace;
     }
-    .win-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .win-dot { width: 7px; height: 7px; border-radius: 50%; }
     .win-dot.r { background: #ff5f57; } .win-dot.y { background: #febc2e; } .win-dot.g { background: #28c840; }
     
-    .win-body { padding: 12px; font-size: 12px; color: rgba(160,200,160,0.9); line-height: 1.5; }
-    .win-body .label { font-size: 10px; color: rgba(120,160,120,0.6); margin-bottom: 4px; font-family: monospace; }
-    .win-body .main { font-size: 13px; color: rgba(200,230,200,0.95); font-weight: 500; }
-    .win-body .sub { font-size: 11px; color: rgba(120,180,120,0.7); margin-top: 4px; }
+    .win-body { padding: 14px; font-size: 12px; color: rgba(150,180,150,0.9); line-height: 1.5; }
+    .win-body .label { font-size: 9.5px; color: rgba(100,140,100,0.6); margin-bottom: 5px; font-family: monospace; }
+    .win-body .main { font-size: 13.5px; color: rgba(210,240,210,0.95); font-weight: 500; }
+    .win-body .sub { font-size: 11px; color: rgba(110,150,110,0.7); margin-top: 5px; }
     
     .win-cta {
-      margin-top: 10px; padding: 6px; font-size: 11px;
-      background: rgba(40,200,80,0.08); border: 0.5px solid rgba(40,200,80,0.25);
-      border-radius: 4px; color: rgba(120,220,120,0.9); text-align: center;
+      margin-top: 12px; padding: 7px; font-size: 11px;
+      background: rgba(40,200,80,0.06); border: 0.5px solid rgba(40,200,80,0.2);
+      border-radius: 4px; color: rgba(100,220,100,0.85); text-align: center;
       font-family: monospace;
     }
 
-    /* Varianti cromatiche delle finestre */
-    .error-win { border-color: rgba(220,80,80,0.35); }
-    .slack-win { border-color: rgba(80,80,220,0.35); }
-    .cal-win { border-color: rgba(220,160,40,0.35); }
+    .error-win { border-color: rgba(220,80,80,0.3); }
+    .slack-win { border-color: rgba(80,80,220,0.3); }
+    .cal-win { border-color: rgba(220,160,40,0.3); }
 
-    /* Barra delle applicazioni inferiore */
+    /* Container dei Pop-up di disturbo asincroni */
+    #toast-container {
+      position: absolute;
+      bottom: 60px;
+      right: 20px;
+      width: 320px;
+      z-index: 180;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .toast-notification {
+      background: rgba(20, 10, 15, 0.95);
+      border: 0.5px solid rgba(220, 80, 80, 0.4);
+      border-radius: 6px;
+      padding: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      pointer-events: all;
+      animation: slideIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(120%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .toast-header {
+      font-size: 10px; font-family: monospace; color: #ff5f57; margin-bottom: 4px;
+      display: flex; justify-content: space-between;
+    }
+    .toast-close {
+      cursor: pointer; background: none; border: none; color: rgba(255,255,255,0.4); font-size: 11px;
+    }
+    .toast-close:hover { color: #fff; }
+    .toast-title { font-size: 12px; color: #eee; font-weight: 500; }
+    .toast-desc { font-size: 11px; color: rgba(180,150,150,0.7); margin-top: 2px; }
+
+    /* Barra inferiore */
     .taskbar {
       position: absolute; bottom: 0; left: 0; right: 0; height: 40px;
-      background: rgba(12,12,18,0.98);
-      border-top: 0.5px solid rgba(100,200,100,0.15);
-      display: flex; align-items: center; padding: 0 16px; gap: 10px;
+      background: rgba(10,10,14,0.99);
+      border-top: 0.5px solid rgba(100,200,100,0.12);
+      display: flex; align-items: center; padding: 0 16px;
       z-index: 100;
     }
-    .taskbar-time { margin-left: auto; font-size: 12px; color: rgba(160,200,160,0.6); font-family: monospace; }
+    .taskbar-time { margin-left: auto; font-size: 12px; color: rgba(140,180,140,0.5); font-family: monospace; }
     
-    /* Overlay e Modali delle risorse */
+    /* Overlay e Modali */
     .overlay {
-      position: absolute; inset: 0; background: rgba(5,5,8,0.92); z-index: 200;
+      position: absolute; inset: 0; background: rgba(4,4,6,0.95); z-index: 200;
       display: flex; align-items: center; justify-content: center;
-      opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
     }
     .overlay.active { opacity: 1; pointer-events: all; }
     
     .resource-card {
-      background: #0e0e16; border-radius: 12px; padding: 30px;
-      max-width: 420px; width: 90%; position: relative;
-      border: 0.5px solid rgba(100,200,100,0.3);
-      box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+      background: #0b0b10; border-radius: 12px; padding: 32px;
+      max-width: 440px; width: 92%; position: relative;
+      border: 0.5px solid rgba(100,200,100,0.25);
+      box-shadow: 0 25px 60px rgba(0,0,0,0.85);
     }
     .resource-tag {
       font-size: 10px; font-family: monospace; padding: 4px 8px;
       border-radius: 4px; display: inline-block; margin-bottom: 16px;
     }
-    .tag-err { background: rgba(200,40,40,0.1); color: #ff8f8f; border: 0.5px solid rgba(200,40,40,0.3); }
-    .resource-title { font-size: 18px; color: #fff; margin-bottom: 12px; line-height: 1.4; }
-    .resource-body { font-size: 13.5px; color: rgba(160,190,160,0.85); line-height: 1.6; margin-bottom: 20px; }
+    .tag-err { background: rgba(220,80,80,0.1); color: #ff7f7f; border: 0.5px solid rgba(220,80,80,0.25); }
+    .resource-title { font-size: 18px; color: #fff; margin-bottom: 12px; line-height: 1.4; letter-spacing: -0.3px; }
+    .resource-body { font-size: 13.5px; color: rgba(150,180,150,0.85); line-height: 1.6; margin-bottom: 24px; }
     
     .resource-link {
-      display: block; padding: 10px; border-radius: 6px; font-size: 12px;
+      display: block; padding: 12px; border-radius: 6px; font-size: 12px;
       font-family: monospace; text-align: center; text-decoration: none;
-      background: rgba(100,200,100,0.08); border: 0.5px solid rgba(100,200,100,0.3); color: #a0e0a0;
-      transition: background 0.2s;
+      background: rgba(100,200,100,0.06); border: 0.5px solid rgba(100,200,100,0.25); color: #90d090;
+      transition: background 0.2s, transform 0.1s;
     }
-    .resource-link:hover { background: rgba(100,200,100,0.15); }
+    .resource-link:hover { background: rgba(100,200,100,0.12); }
     
     .close-btn {
-      position: absolute; top: 16px; right: 16px; font-size: 20px;
-      color: rgba(160,190,160,0.4); cursor: pointer; background: none; border: none;
+      position: absolute; top: 18px; right: 18px; font-size: 22px;
+      color: rgba(140,170,140,0.3); cursor: pointer; background: none; border: none; line-height: 1;
     }
     .close-btn:hover { color: #fff; }
 
     .glitch-bar {
       position: absolute; left: 0; right: 0; height: 3px;
-      background: rgba(220,80,80,0.4); z-index: 300; pointer-events: none; display: none;
+      background: rgba(220,80,80,0.35); z-index: 300; pointer-events: none; display: none;
     }
     
     .hint {
       position: absolute; bottom: 60px; left: 0; right: 0;
       text-align: center; font-size: 12px; font-family: monospace;
-      color: rgba(100,160,100,0.4); z-index: 5;
+      color: rgba(100,150,100,0.35); z-index: 5; padding: 0 20px;
     }
   </style>
 </head>
@@ -201,84 +247,90 @@
   <div class="scanlines"></div>
   <div class="glitch-bar" id="gbar"></div>
 
-  <!-- Gamification: HUD di tracciamento dell'attenzione dell'utente -->
+  <!-- HUD Controllo Energetico/Dopaminergico -->
   <div class="hud-container">
-    <div class="hud-label" id="hud-text">Riserva di Focus Mentale</div>
+    <div class="hud-header">
+      <div class="hud-label" id="hud-text">Autocontrollo Attentivo</div>
+      <div class="hud-value" id="hud-val">100%</div>
+    </div>
     <div class="focus-bar-bg">
       <div class="focus-bar-fill" id="focus-fill"></div>
     </div>
   </div>
 
-  <!-- Finestra 1: Errore Esecutivo -->
-  <button class="win error-win" id="win-error" style="left: 10vw; top: 15vh; width: 280px;">
+  <!-- Contenitore Notifiche Fluttuanti -->
+  <div id="toast-container"></div>
+
+  <!-- Elemento di sblocco/Finestra: Executive Error -->
+  <button class="win error-win" id="win-error" style="left: 12vw; top: 18vh; width: 290px;">
     <div class="win-title">
       <div class="win-dot r"></div><div class="win-dot y"></div><div class="win-dot g"></div>
-      <span style="margin-left:6px">executive_error.sys</span>
+      <span style="margin-left:6px">executive_dysfunction.sys</span>
     </div>
     <div class="win-body">
-      <div class="label">CRITICAL_OVERLOAD</div>
-      <div class="main">La pianificazione è bloccata</div>
-      <div class="sub">Troppi task in coda. Il sistema non riesce a calcolare l'ordine di importanza.</div>
-      <div class="win-cta">→ Ispeziona blocco</div>
+      <div class="label">COGNITIVE_PARALYSIS</div>
+      <div class="main">Analisi delle priorità fallita</div>
+      <div class="sub">Troppi input concorrenti. Il cervello rifiuta la sequenzialità delle azioni.</div>
+      <div class="win-cta">→ Ispeziona blocco cognitivo</div>
     </div>
   </button>
 
-  <!-- Finestra 2: Slack (Richieste esterne) -->
-  <button class="win slack-win" id="win-slack" style="right: 15vw; top: 20vh; width: 270px;">
+  <!-- Elemento di sblocco/Finestra: Slack Interruption -->
+  <button class="win slack-win" id="win-slack" style="right: 18vw; top: 22vh; width: 280px;">
     <div class="win-title">
       <div class="win-dot r"></div><div class="win-dot y"></div><div class="win-dot g"></div>
-      <span style="margin-left:6px">Slack — Urgente</span>
+      <span style="margin-left:6px">Slack — Notifica Canale</span>
     </div>
     <div class="win-body">
-      <div class="label">Notifica Asincrona</div>
-      <div class="main">"Hai cinque minuti per questa cosa?"</div>
-      <div class="sub">Una richiesta apparentemente piccola interrompe il flusso attuale.</div>
-      <div class="win-cta">→ Rispondi subito</div>
+      <div class="label">Interruzione Esterna</div>
+      <div class="main">"Hai visto il file modificato?"</div>
+      <div class="sub">Un micro-task asincrono minaccia di distruggere l'iperfocus attuale.</div>
+      <div class="win-cta">→ Gestisci interruzione</div>
     </div>
   </button>
 
-  <!-- Finestra 3: Calendario (Cecità temporale) -->
-  <button class="win cal-win" id="win-cal" style="left: 15vw; bottom: 20vh; width: 280px;">
+  <!-- Elemento di sblocco/Finestra: Time Blindness Tracker -->
+  <button class="win cal-win" id="win-cal" style="left: 18vw; bottom: 22vh; width: 290px;">
     <div class="win-title">
       <div class="win-dot r"></div><div class="win-dot y"></div><div class="win-dot g"></div>
-      <span style="margin-left:6px">Scadenze imminenti</span>
+      <span style="margin-left:6px">Scadenze Trascurate</span>
     </div>
     <div class="win-body">
-      <div class="label">Time Blindness Tracker</div>
-      <div class="main">La scadenza è adesso o mai più</div>
-      <div class="sub">Percezione alterata del tempo: i task futuri sembrano non esistere finché non è tardi.</div>
-      <div class="win-cta">→ Calcola tempo rimasto</div>
+      <div class="label">Time Blindness Model</div>
+      <div class="main">La scadenza temporale è svanita</div>
+      <div class="sub">Difficoltà intrinseca a percepire lo scorrere lineare delle ore. Tutto è "ORA" o "NON ORA".</div>
+      <div class="win-cta">→ Mappa linea temporale</div>
     </div>
   </button>
 
-  <!-- Finestra 4: Gmail (Paralisi d'avvio) -->
-  <button class="win" id="win-mail" style="right: 12vw; bottom: 25vh; width: 260px; border-color: rgba(140,80,200,0.35);">
+  <!-- Elemento di sblocco/Finestra: Task Initiation Freeze -->
+  <button class="win" id="win-mail" style="right: 15vw; bottom: 26vh; width: 270px; border-color: rgba(140,80,200,0.35);">
     <div class="win-title">
       <div class="win-dot r"></div><div class="win-dot y"></div><div class="win-dot g"></div>
-      <span style="margin-left:6px">Posta in arrivo (84)</span>
+      <span style="margin-left:6px">InBox Accumulata</span>
     </div>
     <div class="win-body">
-      <div class="label">Task Initiation Freeze</div>
-      <div class="main">Mail accumulate da evadere</div>
-      <div class="sub">Rimandare non è pigrizia. È l'incapacità neurologica di avviare l'azione.</div>
-      <div class="win-cta">→ Apri accumulo</div>
+      <div class="label">Procrastination Engine</div>
+      <div class="main">84 messaggi in attesa di risposta</div>
+      <div class="sub">Il blocco della partenza: lo sforzo chimico per iniziare l'azione supera la ricompensa attesa.</div>
+      <div class="win-cta">→ Rompi la paralisi</div>
     </div>
   </button>
 
-  <div class="hint" id="hint-text">Cerca di selezionare un elemento. Nota come gli stimoli adiacenti creano rumore visivo.</div>
+  <div class="hint" id="hint-text">Seleziona una risorsa. Ignora le notifiche laterali se vuoi preservare la riserva di Focus.</div>
 
   <div class="taskbar">
     <span class="taskbar-time" id="tclock">--:--</span>
   </div>
 
-  <!-- Modali di atterraggio (Contenuto clinico / divulgativo) -->
+  <!-- Modali Cliniche Generiche -->
   <div class="overlay" id="ov-error">
     <div class="resource-card">
       <button class="close-btn" onclick="closeOverlay('ov-error')">×</button>
       <div class="resource-tag tag-err">Funzioni Esecutive</div>
-      <div class="resource-title">La mente non risponde agli ordini?</div>
-      <div class="resource-body">Quando sperimenti il blocco cognitivo, non stai mancando di forza di volontà. La disfunzione esecutiva impedisce al cervello di mappare le micro-azioni necessarie per partire.</div>
-      <a class="resource-link" target="_blank" href="https://www.additudemag.com/executive-function-disorder-adhd-explained/">Leggi l'analisi scientifica su ADDitude</a>
+      <div class="resource-title">La paralisi non è mancanza di volontà</div>
+      <div class="resource-body">Quando sperimenti l'ADHD Freeze, la corteccia prefrontale fa fatica a regolare il rilascio di dopamina. Non stai scegliendo di procrastinare; il tuo cervello sta attivamente rifiutando la transizione tra stati cognitivi.</div>
+      <a class="resource-link" target="_blank" href="https://www.additudemag.com/executive-function-disorder-adhd-explained/">Accedi alle risorse di supporto su ADDitude</a>
     </div>
   </div>
 </div>
@@ -288,7 +340,9 @@ const root = document.getElementById('glitch-root');
 const hint = document.getElementById('hint-text');
 const gbar = document.getElementById('gbar');
 const focusFill = document.getElementById('focus-fill');
+const hudVal = document.getElementById('hud-val');
 const hudText = document.getElementById('hud-text');
+const toastContainer = document.getElementById('toast-container');
 
 let focusScore = 100;
 let clickCount = 0;
@@ -296,6 +350,16 @@ let driftIntervals = {};
 let hoverTimers = {};
 let globalGlitchInterval = null;
 let freezeTimer = null;
+let audioCtx = null;
+
+// Pool di messaggi realistici per i pop-up Toast (Gamification di disturbo)
+const toastPool = [
+  { h: "WHATSAPP", t: "Mamma", d: "Ti sei ricordato di chiamare l'amministratore?" },
+  { h: "BANCA", t: "Notifica App", d: "Addebito mensile automatico effettuato: -49.99€" },
+  { h: "LINKEDIN", t: "Aggiornamento", d: "Un tuo ex collega ha cambiato posizione lavorativa. Congratulati!" },
+  { h: "GMAIL", t: "Promozione", d: "Solo per oggi: sconto del 40% sul corso che avevi salvato" },
+  { h: "SISTEMA", t: "Aggiornamento", d: "Il riavvio forzato è pianificato tra 15 minuti" }
+];
 
 function updateClock() {
   const now = new Date();
@@ -303,43 +367,109 @@ function updateClock() {
 }
 updateClock(); setInterval(updateClock, 10000);
 
-// Gamification: Il focus si consuma passivamente se l'utente esita troppo
-setInterval(() => {
-  if (!root.classList.contains('freeze') && focusScore > 10) {
-    consumeFocus(0.5);
+// Inizializzazione nativa Web Audio API (senza asset scaricabili)
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
-}, 200);
+}
+
+// Generatore di suono sintetico per l'effetto click/glitch
+function playGlitchSound(freq = 120, duration = 0.08) {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    
+    gainNode.gain.setValueAtTime(0.04, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch(e) { console.log("Audio bloccato dalle policy del browser."); }
+}
+
+// Ciclo passivo di depauperamento del focus energetico
+setInterval(() => {
+  if (!root.classList.contains('freeze') && focusScore > 5) {
+    consumeFocus(0.4);
+  }
+}, 250);
 
 function consumeFocus(amount) {
   focusScore = Math.max(0, focusScore - amount);
   focusFill.style.width = focusScore + '%';
+  hudVal.textContent = Math.round(focusScore) + '%';
   
   if (focusScore < 30) {
     focusFill.style.backgroundColor = '#ff5f57';
-    hudText.textContent = 'FOCUS CRITICO: Sovraccarico in corso';
-    if(clickCount === 0) startChaos(); // Forza il movimento se il focus crolla
+    hudText.textContent = 'ATTENZIONE CRITICA';
+    if(clickCount === 0) startChaos(); 
   } else if (focusScore < 65) {
     focusFill.style.backgroundColor = '#febc2e';
     hudText.textContent = 'Focus in esaurimento...';
   }
 }
 
-// Gamification / ADHD Dynamics: Il meccanismo di Freeze
+// Meccanismo di stallo (Freeze da inattività)
 function resetFreezeTimer() {
+  initAudio();
   if (root.classList.contains('freeze')) {
     root.classList.remove('freeze');
-    hint.textContent = 'Flusso riattivato. Trova le risorse prima di perdere il focus.';
+    hint.textContent = 'Stato riattivato. Trova i punti di accesso alle risorse.';
   }
   clearTimeout(freezeTimer);
   freezeTimer = setTimeout(() => {
     root.classList.add('freeze');
-    hint.textContent = '[ Paralisi da decisione: Il sistema è andato in blocco per troppa staticità. Muoviti. ]';
-    consumeFocus(10); // Punizione in termini di focus per lo stallo
-  }, 5000);
+    hint.textContent = '[ Blocco decisionale: Il sistema si è arrestato per assenza di stimoli diretti. Riattivati. ]';
+    playGlitchSound(80, 0.3);
+    consumeFocus(8);
+  }, 6000);
 }
 root.addEventListener('mousemove', resetFreezeTimer);
 root.addEventListener('click', resetFreezeTimer);
 resetFreezeTimer();
+
+// Generatore automatico e dinamico di Pop-up Toast asincroni
+function spawnToast() {
+  if (root.classList.contains('freeze')) return;
+  
+  const data = toastPool[Math.floor(Math.random() * toastPool.length)];
+  const toast = document.createElement('div');
+  toast.className = 'toast-notification';
+  
+  toast.innerHTML = `
+    <div class="toast-header">
+      <span>${data.h}</span>
+      <button class="toast-close">×</button>
+    </div>
+    <div class="toast-title">${data.t}</div>
+    <div class="toast-desc">${data.d}</div>
+  `;
+  
+  // Il click sul pop-up simula la distrazione: consuma focus anziché aiutare
+  toast.querySelector('.toast-close').addEventListener('click', (e) => {
+    e.stopPropagation();
+    consumeFocus(6);
+    playGlitchSound(180, 0.05);
+    toast.remove();
+  });
+  
+  toastContainer.appendChild(toast);
+  playGlitchSound(350, 0.1);
+  
+  // Auto-rimozione del pop-up dopo 4.5 secondi per non intasare la UI
+  setTimeout(() => { if(toast.parentNode) toast.remove(); }, 4500);
+}
+
+// Avvio del loop dei pop-up Toast asincroni
+setInterval(spawnToast, 6000);
 
 function openOverlay(id) {
   document.getElementById(id).classList.add('active');
@@ -349,43 +479,40 @@ function openOverlay(id) {
 function closeOverlay(id) {
   document.getElementById(id).classList.remove('active');
   clickCount++;
-  focusScore = Math.min(100, focusScore + 30); // Guadagni focus quando chiudi e capisci il meccanismo
+  focusScore = Math.min(100, focusScore + 25);
   startChaos();
 }
 
-// Associazione eventi click diretti
-document.getElementById('win-error').addEventListener('click', () => openOverlay('ov-error'));
-// Mappa gli altri allo stesso modo (per brevità usano lo stesso overlay in questa demo)
-document.getElementById('win-slack').addEventListener('click', () => openOverlay('ov-error'));
-document.getElementById('win-cal').addEventListener('click', () => openOverlay('ov-error'));
-document.getElementById('win-mail').addEventListener('click', () => openOverlay('ov-error'));
+// Binding eventi click per le finestre di ingresso
+document.querySelectorAll('.win').forEach(win => {
+  win.addEventListener('click', () => openOverlay('ov-error'));
+});
 
 function glitchFlash() {
   gbar.style.display = 'block';
   gbar.style.top = Math.random() * window.innerHeight + 'px';
-  setTimeout(() => { gbar.style.display = 'none'; }, 60 + Math.random() * 100);
+  setTimeout(() => { gbar.style.display = 'none'; }, 50 + Math.random() * 90);
 }
 
-// Drift su tutto lo schermo usando le percentuali della Viewport reale
 function driftWindow(el, id) {
   if (driftIntervals[id]) return;
   
   driftIntervals[id] = setInterval(() => {
-    const maxX = window.innerWidth - el.offsetWidth - 20;
+    const maxX = window.innerWidth - el.offsetWidth - 25;
     const maxY = window.innerHeight - el.offsetHeight - 60;
     
     const curL = el.offsetLeft;
     const curT = el.offsetTop;
     
-    // Movimenti più ampi ora che lo spazio è l'intero monitor
-    const dx = (Math.random() - 0.5) * 160;
-    const dy = (Math.random() - 0.5) * 120;
+    const dx = (Math.random() - 0.5) * 180;
+    const dy = (Math.random() - 0.5) * 130;
     
-    el.style.left = Math.max(10, Math.min(maxX, curL + dx)) + 'px';
-    el.style.top = Math.max(10, Math.min(maxY, curT + dy)) + 'px';
+    el.style.left = Math.max(15, Math.min(maxX, curL + dx)) + 'px';
+    el.style.top = Math.max(15, Math.min(maxY, curT + dy)) + 'px';
     
+    if(Math.random() > 0.4) playGlitchSound(110, 0.04);
     glitchFlash();
-  }, 1500 + Math.random() * 1000);
+  }, 1400 + Math.random() * 900);
 }
 
 function stopDrift() {
@@ -396,29 +523,30 @@ function startChaos() {
   const wins = ['win-error','win-slack','win-cal','win-mail'];
   wins.forEach(id => driftWindow(document.getElementById(id), id));
   if (!globalGlitchInterval) {
-    globalGlitchInterval = setInterval(glitchFlash, 2500);
+    globalGlitchInterval = setInterval(glitchFlash, 2200);
   }
 }
 
-// Interazione di prossimità/indugio (Jitter concorrente + Fuga istantanea)
+// Logica di interazione prossimale (Jitter + Fuga istantanea adattiva)
 const wins = document.querySelectorAll('.win');
 wins.forEach(win => {
   win.addEventListener('mouseenter', () => {
-    // Le ALTRE finestre tremano per rubare l'occhio
     wins.forEach(w => { if (w.id !== win.id) w.classList.add('distracted'); });
 
     hoverTimers[win.id] = setTimeout(() => {
-      // Se il focus è basso o l'utente ha già interagito, la finestra scappa prima che tu possa cliccare
-      if (clickCount >= 0 || focusScore < 80) {
-        const maxX = window.innerWidth - win.offsetWidth - 20;
+      // Più il focus è basso, più la finestra scatta via rapidamente
+      if (clickCount >= 0 || focusScore < 85) {
+        const maxX = window.innerWidth - win.offsetWidth - 25;
         const maxY = window.innerHeight - win.offsetHeight - 60;
         
-        win.style.left = Math.max(20, Math.random() * maxX) + 'px';
-        win.style.top = Math.max(20, Math.random() * maxY) + 'px';
-        consumeFocus(5); // Tentativo fallito = spreco di energia mentale
+        win.style.left = Math.max(25, Math.random() * maxX) + 'px';
+        win.style.top = Math.max(25, Math.random() * maxY) + 'px';
+        
+        consumeFocus(4);
+        playGlitchSound(220, 0.06);
         glitchFlash();
       }
-    }, 800); // Abbassato a 800ms: se esiti, perdi l'attimo.
+    }, 700); // Soglia di reazione abbassata a 700ms per riflettere l'impulsività
   });
   
   win.addEventListener('mouseleave', () => {
