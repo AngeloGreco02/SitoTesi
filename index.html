@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cognitive Overload Engine - 3s Stacking Chaos</title>
+  <title>Cognitive Overload Engine - 3s Stacking Chaos Stable</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body, html { width: 100%; height: 100%; overflow: hidden; background: #111218; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -34,7 +34,7 @@
     .todo-list { list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
     .todo-item { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.02); padding: 6px 8px; border-radius: 4px; font-family: monospace; font-size: 11px; }
 
-    /* Template grafico per i pop-up di chiamata che si accumulano */
+    /* Pop-up di chiamata che si accumulano */
     .incoming-call-box { width: 340px; background: #141520; border: 1px solid #febc2e; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); z-index: 110; padding: 16px; }
     .call-info { display: flex; align-items: center; gap: 12px; }
     .call-avatar { width: 36px; height: 36px; background: #febc2e; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
@@ -135,9 +135,175 @@ document.addEventListener('DOMContentLoaded', () => {
   const callers = ["Ufficio Risorse", "Numero Privato", "Mamma", "Corriere Amazon", "Banca", "Amministratore"];
   const toastPool = ["Nuova mail", "Scadenza imminente!", "Log di errore", "Notifica Chat"];
 
+  // Spostato qui sopra: funzione helper per evitare eccezioni di hoisting a runtime
+  function createGainNode(volume, duration) {
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    return gain;
+  }
+
+  function playSynthTone(freq, duration, type = 'sine', volume = 0.02) {
+    if (!audioCtx) return;
+    try {
+      const osc = audioCtx.createOscillator();
+      const gain = createGainNode(volume, duration);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + duration);
+    } catch(e) {}
+  }
+
   // Generazione icone sul desktop
   for (let i = 0; i < 40; i++) {
     if (Math.random() > 0.5) {
       const icon = document.createElement('div');
       icon.className = 'bg-icon';
-      icon.innerHTML = `<div class="bg-icon-visual
+      icon.innerHTML = `<div class="bg-icon-visual"></div><div class="bg-icon-text">junk_${i}.docx</div>`;
+      desktopGrid.appendChild(icon);
+    } else {
+      desktopGrid.appendChild(document.createElement('div'));
+    }
+  }
+
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('tclock').textContent = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  }
+  updateClock(); setInterval(updateClock, 10000);
+
+  function initAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+
+  function makeWindowDrift(element) {
+    setInterval(() => {
+      if (focusScore <= 0 || isHyperfocused) return;
+      const maxX = window.innerWidth - element.offsetWidth - 30;
+      const maxY = window.innerHeight - element.offsetHeight - 60;
+      element.style.left = Math.max(20, Math.random() * maxX) + 'px';
+      element.style.top = Math.max(40, Math.random() * maxY) + 'px';
+    }, 2200 + Math.random() * 800);
+  }
+
+  makeWindowDrift(document.getElementById('todo-box'));
+  makeWindowDrift(document.getElementById('win-main'));
+
+  // Heartbeat passivo
+  setInterval(() => {
+    if (focusScore <= 0 || !audioCtx) return;
+    let isCritical = focusScore < 30;
+    playSynthTone(isCritical ? 85 : 55, isCritical ? 0.1 : 0.18, 'sine', 0.03);
+  }, 750);
+
+  function createAudioRinger() {
+    activeRingersCount++;
+    let ringInterval = setInterval(() => {
+      if (focusScore <= 0 || isHyperfocused) { clearInterval(ringInterval); return; }
+      playSynthTone(580 + (activeRingersCount * 15), 0.3, 'sine', 0.04);
+    }, 1500);
+    return ringInterval;
+  }
+
+  // Trigger chiamate ogni 3 secondi esatti
+  setInterval(() => {
+    if (focusScore <= 0 || isHyperfocused || document.querySelectorAll('.incoming-call-box').length > 8) return;
+    
+    initAudio();
+    const callerName = callers[Math.floor(Math.random() * callers.length)];
+    
+    const callElement = document.createElement('div');
+    callElement.className = 'win incoming-call-box';
+    
+    callElement.style.left = Math.random() * (window.innerWidth - 360) + 'px';
+    callElement.style.top = Math.random() * (window.innerHeight - 200) + 'px';
+    
+    callElement.innerHTML = `
+      <div class="win-title"><div class="win-dot" style="background:#febc2e"></div><span>Chiamata...</span></div>
+      <div class="call-info">
+        <div class="call-avatar">📞</div>
+        <div style="font-family:monospace; color:#fff; font-size:12px;">
+          <div style="font-weight:bold;">${callerName}</div>
+          <div style="color:rgba(255,255,255,0.5);">In ingresso...</div>
+        </div>
+      </div>
+      <div class="call-actions">
+        <button class="call-btn" style="background:#28c840;" data-action="accept">Rispondi</button>
+        <button class="call-btn" style="background:#ff5f57;" data-action="decline">Rifiuta</button>
+      </div>
+    `;
+
+    let currentRingerToken = createAudioRinger();
+
+    callElement.addEventListener('click', (e) => {
+      const action = e.target.getAttribute('data-action');
+      if (action) {
+        e.stopPropagation();
+        clearInterval(currentRingerToken);
+        activeRingersCount = Math.max(0, activeRingersCount - 1);
+        if (action === 'accept') consumeFocus(15);
+        callElement.remove();
+      }
+    });
+
+    root.appendChild(callElement);
+    makeWindowDrift(callElement); 
+  }, 3000);
+
+  todoMasterList.addEventListener('change', (e) => {
+    if (e.target && e.target.matches('input[type="checkbox"]')) {
+      e.preventDefault(); e.target.checked = false;
+      telemetry.subTasks++; consumeFocus(5);
+      const newLi = document.createElement('li');
+      newLi.className = 'todo-item';
+      newLi.innerHTML = `<input type="checkbox"> <span style="color:#ff7f7f;">Sotto-task concorrente</span>`;
+      todoMasterList.insertBefore(newLi, e.target.closest('li').nextSibling);
+    }
+  });
+
+  // Consumo progressivo passivo
+  setInterval(() => {
+    if (focusScore > 0 && !isHyperfocused) {
+      focusScore = Math.max(0, focusScore - 0.5);
+      focusFill.style.width = focusScore + '%';
+      hudVal.textContent = Math.round(focusScore) + '%';
+      telemetry.focusHistory.push(Math.round(focusScore));
+      if (focusScore < 30 && !root.classList.contains('panic')) root.classList.add('panic');
+      if (focusScore <= 0) renderEndDashboard();
+    }
+  }, 250);
+
+  function consumeFocus(amount) { if(!isHyperfocused) focusScore = Math.max(0, focusScore - amount); }
+
+  function renderEndDashboard() {
+    document.getElementById('analytics-screen').style.display = 'flex';
+    document.getElementById('stat-tasks').textContent = telemetry.subTasks;
+    document.getElementById('stat-distract').textContent = telemetry.falseClicks;
+    document.getElementById('stat-hyper').textContent = telemetry.hyperStates;
+    document.getElementById('stat-time').textContent = Math.round((Date.now() - telemetry.startTime) / 1000) + 's';
+    let history = telemetry.focusHistory;
+    let width = chartTarget.offsetWidth || 500; let height = 140; let pointsStr = "";
+    history.forEach((val, idx) => {
+      let x = (idx / (history.length - 1)) * width; let y = height - ((val / 100) * height);
+      pointsStr += `${x},${y} `;
+    });
+    chartTarget.innerHTML = `<svg width="100%" height="100%" style="position:absolute; inset:0; overflow:visible;"><polyline points="${pointsStr}" fill="none" stroke="#28c840" stroke-width="2"/></svg>`;
+  }
+
+  desktopGrid.addEventListener('click', () => { telemetry.falseClicks++; consumeFocus(8); });
+
+  document.getElementById('win-main').addEventListener('mouseenter', () => {
+    if (focusScore < 85 && !isHyperfocused) {
+      const maxX = window.innerWidth - 300; const maxY = window.innerHeight - 200;
+      document.getElementById('win-main').style.left = Math.random() * maxX + 'px';
+      document.getElementById('win-main').style.top = Math.random() * maxY + 'px';
+      consumeFocus(1.5);
+    }
+  });
+
+  document.getElementById('win-main').addEventListener('click', () => { if(focusScore > 0) renderEndDashboard(); });
+});
+</script>
+</body>
+</html>
