@@ -3,12 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cognitive Overload Engine - Active Voice Build</title>
+  <title>ExecutiveChaos - Cognitive Overload Engine</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body, html { width: 100%; height: 100%; overflow: hidden; background: #07080c; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     #glitch-root { width: 100vw; height: 100vh; position: relative; overflow: hidden; cursor: default; user-select: none; }
     
+    /* Schermata Menu Iniziale (Splash Menu) */
+    .menu-overlay {
+      position: absolute; inset: 0; background: rgba(11, 12, 20, 0.98);
+      z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: opacity 0.5s ease;
+    }
+    .menu-card {
+      background: #121420; border: 1px solid rgba(100, 255, 100, 0.2);
+      border-radius: 12px; padding: 40px; text-align: center; max-width: 450px; width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    }
+    .menu-title { font-size: 32px; color: #fff; font-family: monospace; letter-spacing: -1px; margin-bottom: 8px; font-weight: bold; }
+    .menu-subtitle { font-size: 12px; color: #6c7180; font-family: monospace; margin-bottom: 30px; text-transform: uppercase; }
+    .menu-btn {
+      display: block; width: 100%; padding: 14px; margin-bottom: 12px; border: none; border-radius: 6px;
+      font-family: monospace; font-size: 13px; font-weight: bold; cursor: pointer; transition: all 0.2s;
+    }
+    .menu-btn.btn-play { background: #28c840; color: #fff; box-shadow: 0 4px 15px rgba(40,200,80,0.2); }
+    .menu-btn.btn-play:hover { background: #2ed94b; transform: translateY(-1px); }
+    .menu-btn.btn-guide { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #bcbfca; }
+    .menu-btn.btn-guide:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
     /* Griglia desktop disordinato */
     .desktop-bg { position: absolute; inset: 0; background-color: #0c0d14; background-size: 40px 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); grid-template-rows: repeat(auto-fill, minmax(100px, 1fr)); gap: 20px; padding: 30px; z-index: 0; }
     .bg-icon { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; opacity: 0.35; padding: 6px; border-radius: 6px; z-index: 1; }
@@ -19,7 +41,7 @@
     .bg-icon-visual.pdf::before { content: 'PDF'; position: absolute; bottom: 1px; left: 2px; font-size: 7px; font-family: monospace; color: #fff; font-weight: bold; }
     .bg-icon-text { font-size: 9px; color: #8e93a2; font-family: monospace; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; width: 100%; }
 
-    /* HUD Riserva */
+    /* HUD */
     .hud-container { position: absolute; top: 20px; left: 20px; z-index: 150; background: rgba(10, 11, 16, 0.95); padding: 14px 20px; border-radius: 8px; border: 0.5px solid rgba(100, 255, 100, 0.15); min-width: 260px; }
     .hud-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
     .hud-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: rgba(100, 255, 100, 0.8); font-family: monospace; }
@@ -29,7 +51,7 @@
 
     /* Finestre con Codice Colore */
     .win { position: absolute; background: rgba(14, 15, 23, 0.98); border-radius: 8px; box-shadow: 0 15px 45px rgba(0,0,0,0.6); z-index: 10; cursor: pointer; transition: left 1.2s cubic-bezier(0.1, 0.8, 0.3, 1), top 1.2s cubic-bezier(0.1, 0.8, 0.3, 1), border-color 0.2s; }
-    .win-title { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 0.5px solid rgba(255,255,255,0.08); font-size: 11px; font-family: monospace; }
+    .win-title { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 0.5px solid rgba(255,255,255,0.08); font-size: 11px; color: rgba(255,255,255,0.6); font-family: monospace; }
     .win-dot { width: 7px; height: 7px; border-radius: 50%; background: #eceff1; }
     .win-body { padding: 14px; font-size: 12px; color: rgba(160,180,160,0.9); line-height: 1.5; }
     .win-body .label { font-size: 9.5px; opacity: 0.5; margin-bottom: 4px; font-family: monospace; }
@@ -37,24 +59,19 @@
     .win-cta { margin-top: 10px; padding: 6px; font-size: 11px; border-radius: 4px; text-align: center; font-family: monospace; }
 
     .win.err-red { border: 0.5px solid rgba(255, 95, 87, 0.4); }
-    .win.err-red .win-title { color: #ff5f57; }
     .win.err-red .win-cta { background: rgba(255, 95, 87, 0.08); border: 0.5px solid rgba(255, 95, 87, 0.3); color: #ff5f57; }
     .win.social-blue { border: 0.5px solid rgba(66, 165, 245, 0.4); }
-    .win.social-blue .win-title { color: #42a5f5; }
     .win.social-blue .win-cta { background: rgba(66, 165, 245, 0.08); border: 0.5px solid rgba(66, 165, 245, 0.3); color: #42a5f5; }
     .win.time-yellow { border: 0.5px solid rgba(254, 188, 46, 0.4); }
-    .win.time-yellow .win-title { color: #febc2e; }
-    .win-cta { background: rgba(254, 188, 46, 0.08); border: 0.5px solid rgba(254, 188, 46, 0.3); color: #febc2e; }
+    .win.time-yellow .win-cta { background: rgba(254, 188, 46, 0.08); border: 0.5px solid rgba(254, 188, 46, 0.3); color: #febc2e; }
     .win.freeze-purple { border: 0.5px solid rgba(171, 71, 188, 0.4); }
-    .win.freeze-purple .win-title { color: #ab47bc; }
     .win.freeze-purple .win-cta { background: rgba(171, 71, 188, 0.08); border: 0.5px solid rgba(171, 71, 188, 0.3); color: #ab47bc; }
 
-    /* Stack Chiamate Concorrenti */
+    /* Chiamate */
     .incoming-call-box { width: 340px; background: #141520; border: 1px solid #febc2e; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); z-index: 110; padding: 16px; }
-    /* Stato modificato quando la chiamata è attiva a schermo */
     .incoming-call-box.active-call { border-color: #28c840; background: #0e1410; }
     .call-info { display: flex; align-items: center; gap: 12px; }
-    .call-avatar { width: 36px; height: 36px; background: #febc2e; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.3s; }
+    .call-avatar { width: 36px; height: 36px; background: #febc2e; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     .incoming-call-box.active-call .call-avatar { background: #28c840; }
     .call-actions { display: flex; gap: 10px; margin-top: 12px; }
     .call-btn { flex: 1; padding: 8px; border: none; border-radius: 6px; font-family: monospace; cursor: pointer; font-weight: bold; color: #fff; text-align: center; }
@@ -65,7 +82,7 @@
     #glitch-root.panic .panic-alarm-banner { animation: blinkAlarm 0.4s infinite; }
     @keyframes blinkAlarm { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
 
-    /* Modali */
+    /* Modali Overlays */
     .overlay { position: absolute; inset: 0; background: rgba(4,4,6,0.96); z-index: 200; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s ease; }
     .overlay.active { display: flex; opacity: 1; pointer-events: all; }
     .resource-card { background: #0e0e14; border-radius: 12px; padding: 32px; max-width: 440px; width: 92%; position: relative; }
@@ -73,15 +90,17 @@
     .resource-card.card-blue { border: 1px solid #42a5f5; }
     .resource-card.card-yellow { border: 1px solid #febc2e; }
     .resource-card.card-purple { border: 1px solid #ab47bc; }
+    .resource-card.card-guide { border: 1px solid rgba(100,255,100,0.3); }
     .resource-tag { font-size: 10px; font-family: monospace; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 12px; font-weight: bold; }
-    .resource-title { font-size: 17px; color: #fff; margin-bottom: 10px; font-weight: bold; }
-    .resource-body { font-size: 13px; color: #bcbfca; line-height: 1.6; margin-bottom: 20px; }
-    .resource-link { display: block; padding: 12px; border-radius: 6px; font-size: 12px; font-family: monospace; text-align: center; text-decoration: none; font-weight: bold; }
+    .resource-title { font-size: 17px; color: #fff; margin-bottom: 10px; font-weight: bold; text-align: left; }
+    .resource-body { font-size: 13px; color: #bcbfca; line-height: 1.6; margin-bottom: 20px; text-align: left; }
+    .resource-link { display: block; padding: 12px; border-radius: 6px; font-size: 12px; font-family: monospace; text-align: center; text-decoration: none; font-weight: bold; cursor: pointer; }
     .card-red .resource-link { background: rgba(255,95,87,0.1); border: 1px solid #ff5f57; color: #ff5f57; }
     .card-blue .resource-link { background: rgba(66,165,245,0.1); border: 1px solid #42a5f5; color: #42a5f5; }
     .card-yellow .resource-link { background: rgba(254,188,46,0.1); border: 1px solid #febc2e; color: #febc2e; }
     .card-purple .resource-link { background: rgba(171,71,188,0.1); border: 1px solid #ab47bc; color: #ab47bc; }
     .close-btn { position: absolute; top: 18px; right: 18px; font-size: 22px; color: rgba(255,255,255,0.3); cursor: pointer; background: none; border: none; }
+    .close-btn:hover { color: #fff; }
 
     .glitch-bar { position: absolute; left: 0; right: 0; height: 3px; background: rgba(220,80,80,0.35); z-index: 300; pointer-events: none; display: none; }
     .taskbar { position: absolute; bottom: 0; left: 0; right: 0; height: 40px; background: #090a0e; border-top: 0.5px solid rgba(100,200,100,0.12); display: flex; align-items: center; padding: 0 16px; z-index: 100; }
@@ -92,6 +111,15 @@
 <body>
 
 <div id="glitch-root">
+  <div class="menu-overlay" id="main-menu">
+    <div class="menu-card">
+      <div class="menu-title">ExecutiveChaos</div>
+      <div class="menu-subtitle">ADHD Cognitive Overload Simulator</div>
+      <button class="menu-btn btn-play" id="btn-start-game">PLAY / AVVIA ESPERIENZA</button>
+      <button class="menu-btn btn-guide" id="btn-open-guide">COME GIOCARE</button>
+    </div>
+  </div>
+
   <div class="panic-alarm-banner"></div>
   <div class="desktop-bg" id="desktop-grid"></div>
   <div class="glitch-bar" id="gbar"></div>
@@ -106,50 +134,33 @@
     </div>
   </div>
 
-  <div class="win err-red" id="win-error" style="left: 10vw; top: 18vh; width: 280px;">
-    <div class="win-title"><div class="win-dot"></div><span>errore_sistema.exe</span></div>
-    <div class="win-body">
-      <div class="label">EXCEPTION_0x0F — executive_function.dll</div>
-      <div class="main">Applicazione non risponde</div>
-      <div class="win-cta">→ apri diagnosi</div>
-    </div>
-  </div>
-
-  <div class="win social-blue" id="win-slack" style="right: 15vw; top: 15vh; width: 270px;">
-    <div class="win-title"><div class="win-dot"></div><span>slack — #general</span></div>
-    <div class="win-body">
-      <div class="label">3 messaggi non letti</div>
-      <div class="main">Hai un nuovo messaggio team</div>
-      <div class="win-cta">→ apri slack</div>
-    </div>
-  </div>
-
-  <div class="win time-yellow" id="win-cal" style="left: 15vw; bottom: 22vh; width: 280px;">
-    <div class="win-title"><div class="win-dot"></div><span>calendario — promemoria</span></div>
-    <div class="win-body">
-      <div class="label">⚠ SCADENZA TRA 10 MINUTI</div>
-      <div class="main">Riunione con il team di progetto</div>
-      <div class="win-cta">→ apri calendario</div>
-    </div>
-  </div>
-
-  <div class="win freeze-purple" id="win-mail" style="right: 12vw; bottom: 28vh; width: 260px;">
-    <div class="win-title"><div class="win-dot"></div><span>gmail — inbox (47)</span></div>
-    <div class="win-body">
-      <div class="label">non letti: 47 messaggi</div>
-      <div class="main">Promemoria: feedback atteso</div>
-      <div class="win-cta">→ apri gmail</div>
-    </div>
-  </div>
+  <div class="win err-red" id="win-error" style="left: 10vw; top: 18vh; width: 280px;"><div class="win-title"><div class="win-dot"></div><span>errore_sistema.exe</span></div><div class="win-body"><div class="label">EXCEPTION_0x0F</div><div class="main">Applicazione bloccata</div><div class="win-cta">→ apri diagnosi</div></div></div>
+  <div class="win social-blue" id="win-slack" style="right: 15vw; top: 15vh; width: 270px;"><div class="win-title"><div class="win-dot"></div><span>slack — #general</span></div><div class="win-body"><div class="label">3 messaggi</div><div class="main">Nuova notifica team</div><div class="win-cta">→ apri slack</div></div></div>
+  <div class="win time-yellow" id="win-cal" style="left: 15vw; bottom: 22vh; width: 280px;"><div class="win-title"><div class="win-dot"></div><span>calendario — promemoria</span></div><div class="win-body"><div class="label">⚠ TIMEOUT IMMINENTE</div><div class="main">Scadenza progetto fra poco</div><div class="win-cta">→ apri calendario</div></div></div>
+  <div class="win freeze-purple" id="win-mail" style="right: 12vw; bottom: 28vh; width: 260px;"><div class="win-title"><div class="win-dot"></div><span>gmail — inbox (47)</span></div><div class="win-body"><div class="label">47 non letti</div><div class="main">Sollecito consegna report</div><div class="win-cta">→ apri gmail</div></div></div>
 
   <div id="toast-container"></div>
-  <div class="hint" id="hint-text">clicca su una finestra — niente si aprirà dove ti aspetti</div>
+  <div class="hint" id="hint-text">Seleziona una risorsa per iniziare l'analisi.</div>
   <div class="taskbar"><span class="taskbar-time" id="tclock">--:--</span></div>
 
-  <div class="overlay" id="ov-error"><div class="resource-card card-red"><button class="close-btn" onclick="closeOverlay('ov-error')">×</button><div class="resource-tag" style="background:rgba(255,95,87,0.15); color:#ff5f57;">executive function</div><div class="resource-title">Difficoltà di Executive Function</div><div class="resource-body">Questa sensazione di blocco coinvolge la pianificazione e l'avvio dei compiti.</div><a class="resource-link" target="_blank" href="https://chadd.org/about-adhd/executive-function-skills/">→ Guida CHADD</a></div></div>
-  <div class="overlay" id="ov-slack"><div class="resource-card card-blue"><button class="close-btn" onclick="closeOverlay('ov-slack')">×</button><div class="resource-tag" style="background:rgba(66,165,245,0.15); color:#42a5f5;">comunità di supporto</div><div class="resource-title">Gestione Comunicazione Asincrona</div><div class="resource-body">Rispondere ai messaggi richiede energie elevate. Esistono comunità di supporto.</div><a class="resource-link" target="_blank" href="https://www.reddit.com/r/ADHD/">→ Forum Supporto</a></div></div>
-  <div class="overlay" id="ov-cal"><div class="resource-card card-yellow"><button class="close-btn" onclick="closeOverlay('ov-cal')">×</button><div class="resource-tag" style="background:rgba(254,188,46,0.15); color:#febc2e;">gestione delle scadenze</div><div class="resource-title">Cecità Temporale</div><div class="resource-body">La difficoltà a percepire il tempo che passa è tipica nell'ADHD.</div><a class="resource-link" target="_blank" href="https://www.additudemag.com/time-management-strategies-adhd-adults/">→ Strategie Tempo</a></div></div>
-  <div class="overlay" id="ov-mail"><div class="resource-card card-purple"><button class="close-btn" onclick="closeOverlay('ov-mail')">×</button><div class="resource-tag" style="background:rgba(171,71,188,0.15); color:#ab47bc;">paralisi da avvio</div><div class="resource-title">Task Initiation Freeze</div><div class="resource-body">La difficoltà a iniziare un compito nonostante l'intenzione reale.</div><a class="resource-link" target="_blank" href="https://www.additudemag.com/adhd-paralysis-freeze-stuck/">→ Sbloccarsi</a></div></div>
+  <div class="overlay" id="ov-guide">
+    <div class="resource-card card-guide">
+      <button class="close-btn" id="btn-close-guide">×</button>
+      <div class="resource-tag" style="background:rgba(100,255,100,0.1); color:#28c840;">Manuale di UX/UI Empathic</div>
+      <div class="resource-title">Regole della Simulazione</div>
+      <div class="resource-body">
+        • <b>Obiettivo:</b> Trovare le 4 risorse cliniche nascoste dietro i task fluttuanti.<br><br>
+        • <b>Disfunzione Esecutiva:</b> Se indugi troppo (1.8s) su una finestra, questa scapperà via. Dopo 2 risorse consultate, il sistema entrerà in <i>Modalità Caos</i> totale.<br><br>
+        • <b>Interruzioni esterne:</b> Ogni 5 secondi partiranno delle chiamate concorrenti. Se rispondi, la chiamata rimarrà a schermo parlando a voce alta, consumando la tua riserva attentiva.
+      </div>
+      <button class="resource-link" id="btn-guide-go" style="background:rgba(40,200,80,0.2); border:1px solid #28c840; color:#28c840;">HO CAPITO, FAMMI GIOCARE</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="ov-error"><div class="resource-card card-red"><button class="close-btn" onclick="closeOverlay('ov-error')">×</button><div class="resource-tag" style="background:rgba(255,95,87,0.15); color:#ff5f57;">executive function</div><div class="resource-title">Disfunzione Esecutiva</div><div class="resource-body">Questa sensazione di blocco invalida la pianificazione e l'avvio sequenziale dei compiti quotidiani.</div><a class="resource-link" target="_blank" href="https://chadd.org/about-adhd/executive-function-skills/">→ Guida Clinica CHADD</a></div></div>
+  <div class="overlay" id="ov-slack"><div class="resource-card card-blue"><button class="close-btn" onclick="closeOverlay('ov-slack')">×</button><div class="resource-tag" style="background:rgba(66,165,245,0.15); color:#42a5f5;">comunità di supporto</div><div class="resource-title">Saturazione Comunicativa</div><div class="resource-body">La gestione della comunicazione asincrona richiede un carico chimico superiore al previsto nell'ADHD.</div><a class="resource-link" target="_blank" href="https://www.reddit.com/r/ADHD/">→ Forum r/ADHD</a></div></div>
+  <div class="overlay" id="ov-cal"><div class="resource-card card-yellow"><button class="close-btn" onclick="closeOverlay('ov-cal')">×</button><div class="resource-tag" style="background:rgba(254,188,46,0.15); color:#febc2e;">gestione delle scadenze</div><div class="resource-title">Time Blindness</div><div class="resource-body">La distorsione della percezione temporale lineare: i compiti imminenti generano paralisi o risposte ansiose.</div><a class="resource-link" target="_blank" href="https://www.additudemag.com/time-management-strategies-adhd-adults/">→ Analisi su ADDitude</a></div></div>
+  <div class="overlay" id="ov-mail"><div class="resource-card card-purple"><button class="close-btn" onclick="closeOverlay('ov-mail')">×</button><div class="resource-tag" style="background:rgba(171,71,188,0.15); color:#ab47bc;">paralisi da avvio</div><div class="resource-title">Task Initiation Freeze</div><div class="resource-body">Difficoltà neurologica ad avviare un'azione pianificata a causa del deficit di regolazione dopaminergica.</div><a class="resource-link" target="_blank" href="https://www.additudemag.com/adhd-paralysis-freeze-stuck/">→ Report di sblocco</a></div></div>
 </div>
 
 <script>
@@ -161,6 +172,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const gbar = document.getElementById('gbar');
   const hint = document.getElementById('hint-text');
   const toastContainer = document.getElementById('toast-container');
+  
+  const mainMenu = document.getElementById('main-menu');
+  let gameStarted = false; // Flag per bloccare l'accumulo chiamate prima del PLAY
 
   let focusScore = 100;
   let audioCtx = null;
@@ -171,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let glitchFrequenceMultiplier = 1;
 
   const callers = ["Ufficio", "Capo Progetto", "Mamma", "Direzione", "Risorse Umane"];
-  // Frasi vocali ansiogene per la Web Speech API
   const voicePhrases = [
     "Attenzione, serve subito la tua risposta sul file condiviso.",
     "Puoi collegarti un secondo in chiamata? Dobbiamo rifare la pianificazione.",
@@ -180,17 +193,32 @@ document.addEventListener('DOMContentLoaded', () => {
   ];
   const wins = ['win-error', 'win-slack', 'win-cal', 'win-mail'];
 
-  // Popolamento icone spazzatura sul desktop
+  // Generazione icone
   for (let i = 0; i < 45; i++) {
     if (Math.random() > 0.4) {
       const isFolder = Math.random() > 0.5;
       const icon = document.createElement('div');
       icon.className = 'bg-icon';
-      icon.innerHTML = `<div class="bg-icon-visual ${isFolder ? 'folder' : 'pdf'}"></div><div class="bg-icon-text">${isFolder ? 'Cartella' : 'Bozza'}_${i}.sys</div>`;
+      icon.innerHTML = `<div class="bg-icon-visual ${isFolder ? 'folder' : 'pdf'}"></div><div class="bg-icon-text">${isFolder ? 'Cartella' : 'Report'}_${i}</div>`;
       desktopGrid.appendChild(icon);
     } else {
       desktopGrid.appendChild(document.createElement('div'));
     }
+  }
+
+  // Gestione Menu Iniziale e Guida
+  document.getElementById('btn-open-guide').addEventListener('click', () => document.getElementById('ov-guide').classList.add('active'));
+  document.getElementById('btn-close-guide').addEventListener('click', () => document.getElementById('ov-guide').classList.remove('active'));
+  document.getElementById('btn-guide-go').addEventListener('click', () => {
+    document.getElementById('ov-guide').classList.remove('active');
+    startGameExperience();
+  });
+  document.getElementById('btn-start-game').addEventListener('click', startGameExperience);
+
+  function startGameExperience() {
+    initAudio();
+    mainMenu.style.opacity = '0';
+    setTimeout(() => { mainMenu.style.display = 'none'; gameStarted = true; }, 500);
   }
 
   function updateClock() {
@@ -218,15 +246,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function glitchFlash() {
-    gbar.style.display = 'block';
-    gbar.style.top = Math.random() * window.innerHeight + 'px';
+    gbar.style.display = 'block'; gbar.style.top = Math.random() * window.innerHeight + 'px';
     setTimeout(() => { gbar.style.display = 'none'; }, 60);
   }
 
   function makeWindowDrift(element, id) {
     if (driftIntervals[id]) return;
     driftIntervals[id] = setInterval(() => {
-      if (focusScore <= 0) return;
+      if (focusScore <= 0 || !gameStarted) return;
       const maxX = window.innerWidth - element.offsetWidth - 30;
       const maxY = window.innerHeight - element.offsetHeight - 60;
       element.style.left = Math.max(20, Math.random() * maxX) + 'px';
@@ -236,16 +263,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function startChaosMode() {
-    hint.textContent = "le finestre si spostano — è normale sentirsi disorientati";
-    hint.style.color = "rgba(220, 80, 80, 0.7)";
-    wins.forEach(id => {
-      const el = document.getElementById(id);
-      if(el) makeWindowDrift(el, id);
-    });
+    hint.textContent = "Le finestre si spostano — i pensieri fluttuano continuamente.";
+    wins.forEach(id => { const el = document.getElementById(id); if(el) makeWindowDrift(el, id); });
   }
 
   window.openOverlay = function(id) {
-    initAudio();
+    if (!gameStarted) return;
     document.getElementById(id).classList.add('active');
     glitchFrequenceMultiplier += 0.5;
   };
@@ -261,18 +284,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('win-cal').addEventListener('click', () => openOverlay('ov-cal'));
   document.getElementById('win-mail').addEventListener('click', () => openOverlay('ov-mail'));
 
+  // Logica Indugio (1.8s)
   wins.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener('mouseenter', () => {
-      if (clickCount >= 1 && clickCount < 2) { 
+      if (clickCount >= 1 && clickCount < 2 && gameStarted) { 
         hoverTimers[id] = setTimeout(() => {
           const maxX = window.innerWidth - el.offsetWidth - 30;
           const maxY = window.innerHeight - el.offsetHeight - 60;
-          el.style.left = Math.random() * maxX + 'px';
-          el.style.top = Math.random() * maxY + 'px';
-          playSynthTone(220, 0.05, 'sawtooth');
-          glitchFlash();
+          el.style.left = Math.random() * maxX + 'px'; el.style.top = Math.random() * maxY + 'px';
+          playSynthTone(220, 0.05, 'sawtooth'); glitchFlash();
         }, 1800); 
       }
     });
@@ -282,16 +304,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function createAudioRinger() {
     activeRingersCount++;
     let ringInterval = setInterval(() => {
-      if (focusScore <= 0) { clearInterval(ringInterval); return; }
+      if (focusScore <= 0 || !gameStarted) { clearInterval(ringInterval); return; }
       playSynthTone(580 + (activeRingersCount * 12), 0.25, 'sine', 0.03);
     }, 1500);
     return ringInterval;
   }
 
-  // Loop delle chiamate a cascata (5 secondi)
+  // Chiamate ad accumulo asincrono (5 secondi)
   setInterval(() => {
-    if (focusScore <= 0 || document.querySelectorAll('.incoming-call-box').length > 6) return;
-    initAudio();
+    if (focusScore <= 0 || !gameStarted || document.querySelectorAll('.incoming-call-box').length > 5) return;
     const callElement = document.createElement('div');
     callElement.className = 'win incoming-call-box';
     callElement.style.left = Math.random() * (window.innerWidth - 350) + 'px';
@@ -313,48 +334,32 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     let currentRingerToken = createAudioRinger();
-
     callElement.addEventListener('click', (e) => {
       const action = e.target.getAttribute('data-action');
       if (!action) return;
       e.stopPropagation();
 
-      // RISOLUZIONE FUNZIONALITÀ: Se premi rispondi, la chiamata rimane e parla
       if (action === 'accept') {
         clearInterval(currentRingerToken);
         activeRingersCount = Math.max(0, activeRingersCount - 1);
-        focusScore = Math.max(0, focusScore - 10); // Costo energetico
-
-        // Trasformazione grafica in chiamata attiva
+        focusScore = Math.max(0, focusScore - 10);
         callElement.classList.add('active-call');
         callElement.querySelector('.status-txt').textContent = "In corso...";
         callElement.querySelector('.sub-txt').textContent = "Connesso";
         callElement.querySelector('.btn-acc').style.display = 'none';
-        callElement.querySelector('.btn-dec').textContent = "Chiudi Chiamata";
+        callElement.querySelector('.btn-dec').textContent = "Chiudi";
         callElement.querySelector('.btn-dec').setAttribute('data-action', 'hangup');
 
-        // INTEGRAZIONE WEB SPEECH API: Il computer parla riproducendo una voce sintetica
         if ('speechSynthesis' in window) {
-          const randomPhrase = voicePhrases[Math.floor(Math.random() * voicePhrases.length)];
-          const utterance = new SpeechSynthesisUtterance(randomPhrase);
+          const utterance = new SpeechSynthesisUtterance(voicePhrases[Math.floor(Math.random() * voicePhrases.length)]);
           utterance.lang = 'it-IT';
-          utterance.rate = 1.0; // Velocità naturale
-          
-          // Quando la voce finisce di parlare, la finestra si chiude automaticamente liberando spazio
-          utterance.onend = () => {
-            callElement.remove();
-          };
+          utterance.onend = () => callElement.remove();
           window.speechSynthesis.speak(utterance);
-        } else {
-          // Fallback se la sintesi vocale non è supportata dal browser client
-          setTimeout(() => callElement.remove(), 4000);
-        }
-      } 
-      // Se si rifiuta o si appende manualmente la chiamata attiva
-      else if (action === 'decline' || action === 'hangup') {
+        } else { setTimeout(() => callElement.remove(), 4000); }
+      } else {
         clearInterval(currentRingerToken);
         if (action === 'decline') activeRingersCount = Math.max(0, activeRingersCount - 1);
-        if ('speechSynthesis' in window) window.speechSynthesis.cancel(); // Ferma la voce se attiva
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
         callElement.remove();
       }
     });
@@ -363,18 +368,17 @@ document.addEventListener('DOMContentLoaded', () => {
     makeWindowDrift(callElement, 'call-' + Date.now());
   }, 5000);
 
-  // Consumo progressivo riserva energetica
+  // Consumo passivo
   setInterval(() => {
-    if (focusScore > 0) {
+    if (focusScore > 0 && gameStarted) {
       focusScore = Math.max(0, focusScore - 0.4);
       focusFill.style.width = focusScore + '%';
       hudVal.textContent = Math.round(focusScore) + '%';
       if (focusScore < 30 && !root.classList.contains('panic')) root.classList.add('panic');
-      if (focusScore <= 0) document.getElementById('analytics-screen').style.display = 'flex';
     }
   }, 250);
 
-  desktopGrid.addEventListener('click', () => { focusScore = Math.max(0, focusScore - 6); glitchFlash(); });
+  desktopGrid.addEventListener('click', () => { if(gameStarted) { focusScore = Math.max(0, focusScore - 5); glitchFlash(); } });
 });
 </script>
 </body>
